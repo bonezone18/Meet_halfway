@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // <-- New import
+
 import 'package:provider/provider.dart';
+
 import 'screens/home_screen.dart';
 import 'providers/location_provider.dart';
 import 'providers/midpoint_provider.dart';
@@ -8,9 +11,12 @@ import 'providers/directions_provider.dart';
 import 'services/location_service.dart';
 import 'services/place_service.dart';
 import 'services/directions_service.dart';
-import 'constants/api_keys.dart';
 
-void main() {
+Future<void> main() async {
+  // Ensure all bindings are initialized and load .env
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env"); // <-- Load .env before runApp
+
   runApp(const MyApp());
 }
 
@@ -20,7 +26,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locationService = LocationService();
-    final directionsService = DirectionsService(googleApiKey);
+    final directionsService = DirectionsService(dotenv.env['GOOGLE_API_KEY']!); // <-- Read from .env
     final placeService = PlaceService();
 
     return MultiProvider(

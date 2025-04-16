@@ -8,6 +8,10 @@ build/
 coverage/
 *.lock
 
+# Contains the Google API key
+.env
+
+
 # IDEs
 .idea/
 *.iml
