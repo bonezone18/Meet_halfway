@@ -1,0 +1,52 @@
+# Flutter & Dart
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+flutter_*.png
+build/
+coverage/
+*.lock
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code settings (optional - remove comment to ignore these too)
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs and temp files
+*.log
+*.class
+*.pyc
+*.swp
+.history
+.buildlog/
+migrate_working_dir/
+
+# iOS & Android
+**/ios/Flutter/.last_build_id
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/ServiceDefinitions.json
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# Obfuscation / symbolication
+app.*.symbols
+app.*.map.json
+
+# Generated documentation
+doc/api/
+
+# Swift PM
+.swiftpm/
+
+# SVN (if somehow present)
+.svn/
