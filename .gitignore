@@ -10,6 +10,7 @@ coverage/
 
 # Contains the Google API key
 .env
+android/key.properties
 
 
 # IDEs
