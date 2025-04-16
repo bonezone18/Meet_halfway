@@ -49,6 +49,8 @@ lib/
 ├── constants/
 │   └── api_keys.dart
 ├── models/
+│   ├── location_model.dart
+│   ├── place_model.dart
 ├── providers/
 │   ├── directions_provider.dart
 │   ├── location_provider.dart
@@ -56,7 +58,6 @@ lib/
 │   └── place_provider.dart
 ├── screens/
 │   ├── directions_screen.dart
-│   ├── directions_screen.dart.old
 │   ├── home_screen_beforechatgptchanged.dart
 │   ├── home_screen.dart
 │   ├── place_details_screen.dart
@@ -64,14 +65,10 @@ lib/
 ├── services/
 │   ├── directions_service.dart
 │   ├── location_service.dart
-│   ├── location_service.dart.oldgood
 │   ├── midpoint_calculator.dart
 │   ├── place_service.dart
-│   ├── place_service.dart.old
-│   └── place_service.dart.oldgood
 ├── widgets/
 │   ├── location_input_widget.dart
-│   └── location_input_widget.dart.old
 └── main.dart
 ```
 
