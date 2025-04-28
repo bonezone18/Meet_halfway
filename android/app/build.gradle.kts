@@ -1,7 +1,7 @@
 import java.util.Properties
 import java.io.FileInputStream
 
-// 🔐 Load API Key from key.properties
+// Load API key from key.properties
 val keyProperties = Properties()
 val keyPropertiesFile = rootProject.file("key.properties")
 if (keyPropertiesFile.exists()) {
@@ -11,8 +11,7 @@ if (keyPropertiesFile.exists()) {
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
+    id("dev.flutter.flutter-gradle-plugin") // Flutter plugin must come after
 }
 
 android {
@@ -36,13 +35,12 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // ✅ Inject the API key into AndroidManifest.xml
+        // ✅ Securely inject the API key
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = keyProperties["GOOGLE_MAPS_API_KEY"] ?: ""
     }
 
     buildTypes {
         getByName("release") {
-            // Optional: Customize signing config for release
             signingConfig = signingConfigs.getByName("debug")
         }
     }

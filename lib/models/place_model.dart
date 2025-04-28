@@ -13,6 +13,8 @@ class Place {
   final String? priceLevel;
   final String? vicinity;
   final String? icon;
+  final String placeId;
+
 
   Place({
     required this.id,
@@ -26,6 +28,7 @@ class Place {
     this.isOpen = false,
     required this.types,
     required this.distanceFromMidpoint,
+    required this.placeId,
     this.priceLevel,
     this.vicinity,
     this.icon,
@@ -51,6 +54,7 @@ class Place {
           ? List<String>.from(json['types']) 
           : [],
       distanceFromMidpoint: distanceFromMidpoint,
+      placeId: json['place_id'] ?? '',
       priceLevel: json['price_level'] != null 
           ? _getPriceLevel(json['price_level']) 
           : null,

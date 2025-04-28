@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import '../models/place_model.dart';
 import '../providers/location_provider.dart';
 import '../providers/midpoint_provider.dart';
@@ -7,13 +9,14 @@ import '../providers/place_provider.dart';
 import 'place_details_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
-  const ResultsScreen({Key? key});
+  const ResultsScreen({Key? key}) : super(key: key);
 
   @override
   _ResultsScreenState createState() => _ResultsScreenState();
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
+  GoogleMapController? _mapController;
   bool _isSearching = false;
   final Map<String, String> _categoryLabels = {
     'restaurant': 'Restaurants',
@@ -31,31 +34,32 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   void initState() {
     super.initState();
-    _searchPlaces();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchPlaces();
+    });
   }
 
   Future<void> _searchPlaces() async {
-    setState(() {
-      _isSearching = true;
-    });
-
     final midpointProvider = Provider.of<MidpointProvider>(context, listen: false);
     final placeProvider = Provider.of<PlaceProvider>(context, listen: false);
     final midpoint = midpointProvider.midpoint;
 
     if (midpoint != null) {
       try {
+        setState(() => _isSearching = true);
         await placeProvider.searchPlaces(midpoint);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error searching places: ${e.toString()}')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error searching places: ${e.toString()}')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSearching = false);
+        }
       }
     }
-
-    setState(() {
-      _isSearching = false;
-    });
   }
 
   @override
@@ -63,7 +67,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     final locationProvider = Provider.of<LocationProvider>(context);
     final midpointProvider = Provider.of<MidpointProvider>(context);
     final placeProvider = Provider.of<PlaceProvider>(context);
-    
+
     final locationA = locationProvider.locationA;
     final locationB = locationProvider.locationB;
     final midpoint = midpointProvider.midpoint;
@@ -71,7 +75,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meeting Point Results'),
-        backgroundColor: const Color(0xFF4285F4), // Google Maps Blue
+        backgroundColor: const Color(0xFF4285F4),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -112,40 +116,26 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 )
               : Column(
                   children: [
-                    // This would be replaced with a Google Map in the actual implementation
-                    Container(
-                      height: 200,
-                      color: Colors.grey[200],
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Map View',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                    if (midpoint != null)
+                      SizedBox(
+                        height: 200,
+                        child: GoogleMap(
+                          onMapCreated: (controller) {
+                            _mapController = controller;
+                          },
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(midpoint.latitude, midpoint.longitude),
+                            zoom: 14,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('midpoint'),
+                              position: LatLng(midpoint.latitude, midpoint.longitude),
+                              infoWindow: const InfoWindow(title: 'Midpoint'),
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Midpoint: ${midpoint?.latitude.toStringAsFixed(6)}, ${midpoint?.longitude.toStringAsFixed(6)}',
-                            ),
-                            const SizedBox(height: 8),
-                            if (locationA != null && locationB != null && midpoint != null)
-                              Text(
-                                'Distance from A: ${_formatDistance(midpointProvider.calculateDistance(locationA, midpoint))}',
-                              ),
-                            if (locationA != null && locationB != null && midpoint != null)
-                              Text(
-                                'Distance from B: ${_formatDistance(midpointProvider.calculateDistance(locationB, midpoint))}',
-                              ),
-                          ],
+                          },
                         ),
                       ),
-                    ),
-                    
-                    // Category filters
                     Container(
                       height: 50,
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -175,8 +165,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               ],
                             ),
                     ),
-                    
-                    // Sort options
                     Container(
                       height: 50,
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -213,8 +201,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         ],
                       ),
                     ),
-                    
-                    // Place list
                     Expanded(
                       child: placeProvider.isLoading
                           ? const Center(child: CircularProgressIndicator())
@@ -265,8 +251,6 @@ class PlaceListItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: InkWell(
         onTap: () {
-          // Navigate to place details screen
-          // This will be implemented in the next step
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -279,7 +263,6 @@ class PlaceListItem extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Place image
               ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
                 child: SizedBox(
@@ -303,7 +286,6 @@ class PlaceListItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              // Place details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
