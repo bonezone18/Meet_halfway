@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../constants/api_keys.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/place_model.dart';
 import '../models/location_model.dart';
 import 'dart:math' as math;
