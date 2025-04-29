@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_dotenv: ^5.0.2 # <- add this
+  flutter_dotenv: ^5.0.2
 
   provider: ^6.0.5
   google_maps_flutter: ^2.5.0
