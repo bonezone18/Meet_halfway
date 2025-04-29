@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/place_model.dart';
 import '../models/location_model.dart';
 import '../providers/location_provider.dart';
@@ -8,10 +9,7 @@ import '../providers/directions_provider.dart';
 class DirectionsScreen extends StatefulWidget {
   final Place place;
 
-  const DirectionsScreen({
-    super.key,
-    required this.place,
-  });
+  const DirectionsScreen({super.key, required this.place});
 
   @override
   _DirectionsScreenState createState() => _DirectionsScreenState();
@@ -32,7 +30,7 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadDirections();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDirections());
   }
 
   @override
@@ -61,10 +59,20 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
     }
   }
 
+  void _openGoogleMapsUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not launch Google Maps')),
+      );
+    }
+  }
+
   Widget _buildDirectionsTab(
     Map<String, dynamic>? directionsData,
     bool isLoading,
-    Location origin,
   ) {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -150,6 +158,13 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
     final locationA = locationProvider.locationA;
     final locationB = locationProvider.locationB;
 
+    final destination = Location(
+      latitude: widget.place.latitude,
+      longitude: widget.place.longitude,
+      name: widget.place.name,
+      address: widget.place.address,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Directions to ${widget.place.name}'),
@@ -158,7 +173,7 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
           controller: _tabController,
           tabs: const [
             Tab(text: 'From Your Location'),
-            Tab(text: 'From Friends Location'),
+            Tab(text: 'From Friend'),
           ],
         ),
       ),
@@ -193,10 +208,7 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
                   height: 200,
                   width: double.infinity,
                   child: Image.network(
-                    directionsProvider.getStaticMapUrl(locationA, locationB, Location(
-                      latitude: widget.place.latitude,
-                      longitude: widget.place.longitude,
-                    )),
+                    directionsProvider.getStaticMapUrl(locationA!, locationB!, destination),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -210,8 +222,8 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildDirectionsTab(directionsProvider.directionsDataA, directionsProvider.isLoadingA, locationA),
-                      _buildDirectionsTab(directionsProvider.directionsDataB, directionsProvider.isLoadingB, locationB),
+                      _buildDirectionsTab(directionsProvider.directionsDataA, directionsProvider.isLoadingA),
+                      _buildDirectionsTab(directionsProvider.directionsDataB, directionsProvider.isLoadingB),
                     ],
                   ),
                 ),
@@ -220,18 +232,9 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
                   child: ElevatedButton.icon(
                     onPressed: () {
                       final url = _tabController.index == 0
-                          ? directionsProvider.getDirectionsUrlFromA(locationA, Location(
-                              latitude: widget.place.latitude,
-                              longitude: widget.place.longitude,
-                            ), mode: _selectedMode)
-                          : directionsProvider.getDirectionsUrlFromB(locationB, Location(
-                              latitude: widget.place.latitude,
-                              longitude: widget.place.longitude,
-                            ), mode: _selectedMode);
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Would open Google Maps with URL: $url')),
-                      );
+                          ? directionsProvider.getDirectionsUrlFromA(locationA, destination, mode: _selectedMode)
+                          : directionsProvider.getDirectionsUrlFromB(locationB, destination, mode: _selectedMode);
+                      _openGoogleMapsUrl(url);
                     },
                     icon: const Icon(Icons.map),
                     label: const Text('Open in Google Maps'),
