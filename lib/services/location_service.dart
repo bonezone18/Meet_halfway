@@ -20,7 +20,7 @@ class LocationService {
   /// @return A Future that resolves to a Location object with coordinates and formatted address
   Future<Location> geocodeAddress(String address) async {
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${dotenv.env['GOOGLE_API_KEY']}'
+      'https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}'
     );
 
     final response = await http.get(url);
@@ -91,7 +91,7 @@ class LocationService {
   /// @return A Future that resolves to a Location object with the coordinates and address
   Future<Location> reverseGeocode(double latitude, double longitude) async {
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=${dotenv.env['GOOGLE_API_KEY']}'
+      'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}'
     );
 
     final response = await http.get(url);
@@ -148,7 +148,7 @@ class LocationService {
       'https://maps.googleapis.com/maps/api/place/details/json'
       '?place_id=$placeId'
       '&fields=formatted_address,geometry'
-      '&key=${dotenv.env['GOOGLE_API_KEY']}'
+      '&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}'
     );
 
     final response = await http.get(url);

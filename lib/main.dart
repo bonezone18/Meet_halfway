@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locationService = LocationService();
-    final directionsService = DirectionsService(dotenv.env['GOOGLE_API_KEY']!); // <-- Read from .env
+    final directionsService = DirectionsService(dotenv.env['GOOGLE_MAPS_API_KEY']!); // <-- Read from .env
     final placeService = PlaceService();
 
     return MultiProvider(
