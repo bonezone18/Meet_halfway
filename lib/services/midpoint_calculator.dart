@@ -1,9 +1,23 @@
 import 'dart:math' as math;
 import '../models/location_model.dart';
 
+/// A utility class that provides methods for calculating midpoints and distances between geographic locations.
+/// 
+/// This class contains static methods for:
+/// - Calculating the geographic midpoint between two locations
+/// - Calculating a weighted midpoint based on specified weights
+/// - Calculating the distance between two locations using the Haversine formula
 class MidpointCalculator {
-  // Calculate the geographic midpoint between two locations
-  // Uses the Haversine formula to account for Earth's curvature
+  /// Calculates the geographic midpoint between two locations.
+  /// 
+  /// This method uses the Haversine formula to account for Earth's curvature,
+  /// providing an accurate midpoint calculation on a spherical surface.
+  /// The calculation converts geographic coordinates to Cartesian coordinates,
+  /// finds the midpoint, and then converts back to geographic coordinates.
+  /// 
+  /// @param locationA The first location
+  /// @param locationB The second location
+  /// @return A new Location object representing the geographic midpoint
   static Location calculateGeographicMidpoint(Location locationA, Location locationB) {
     // Convert latitude and longitude from degrees to radians
     final lat1 = _degreesToRadians(locationA.latitude);
@@ -41,8 +55,21 @@ class MidpointCalculator {
     );
   }
 
-  // Calculate the weighted midpoint based on travel time
-  // This is a simplified version that adjusts the midpoint based on a weight factor
+  /// Calculates a weighted midpoint between two locations based on specified weights.
+  /// 
+  /// This method allows for calculating a midpoint that is biased towards one of the locations.
+  /// The weights (`weightA` and `weightB`) determine the influence of each location on the final midpoint.
+  /// For example, weights could represent travel time or cost, biasing the midpoint towards the location
+  /// with a higher weight (representing a shorter travel time or lower cost).
+  /// 
+  /// The calculation normalizes the weights and then performs a weighted average of the locations'
+  /// Cartesian coordinates before converting back to geographic coordinates.
+  /// 
+  /// @param locationA The first location
+  /// @param locationB The second location
+  /// @param weightA The weight associated with the first location
+  /// @param weightB The weight associated with the second location
+  /// @return A new Location object representing the weighted midpoint
   static Location calculateWeightedMidpoint(
     Location locationA, 
     Location locationB, 
@@ -90,7 +117,14 @@ class MidpointCalculator {
     );
   }
 
-  // Calculate the distance between two locations in kilometers
+  /// Calculates the great-circle distance between two locations in kilometers using the Haversine formula.
+  /// 
+  /// The Haversine formula determines the shortest distance over the Earth's surface,
+  /// giving an "as-the-crow-flies" distance between the points (ignoring any hills, valleys, etc.).
+  /// 
+  /// @param locationA The first location
+  /// @param locationB The second location
+  /// @return The distance between the two locations in kilometers
   static double calculateDistance(Location locationA, Location locationB) {
     const earthRadius = 6371.0; // Earth's radius in kilometers
     
@@ -113,12 +147,18 @@ class MidpointCalculator {
     return distance;
   }
 
-  // Helper method to convert degrees to radians
+  /// Helper method to convert degrees to radians.
+  /// 
+  /// @param degrees The angle in degrees
+  /// @return The angle converted to radians
   static double _degreesToRadians(double degrees) {
     return degrees * (math.pi / 180.0);
   }
 
-  // Helper method to convert radians to degrees
+  /// Helper method to convert radians to degrees.
+  /// 
+  /// @param radians The angle in radians
+  /// @return The angle converted to degrees
   static double _radiansToDegrees(double radians) {
     return radians * (180.0 / math.pi);
   }

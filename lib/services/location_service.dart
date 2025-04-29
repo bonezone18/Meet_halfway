@@ -4,11 +4,23 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/location_model.dart';
 
+/// Service for handling location-related operations.
+///
+/// This service provides methods for:
+/// - Geocoding addresses to coordinates using the Google Geocoding API
+/// - Getting the current device location using the Geolocator package
+/// - Reverse geocoding coordinates to addresses using the Google Geocoding API
+/// - Retrieving place details (address and geometry) using the Google Places API
 class LocationService {
-  // Geocode an address to get coordinates
+  /// Geocodes a human-readable address into geographic coordinates (latitude/longitude).
+  ///
+  /// Uses the Google Geocoding API to convert an address string into a Location object.
+  ///
+  /// @param address The address string to geocode
+  /// @return A Future that resolves to a Location object with coordinates and formatted address
   Future<Location> geocodeAddress(String address) async {
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=$googleApiKey'
+      'https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${dotenv.env['GOOGLE_API_KEY']}'
     );
 
     final response = await http.get(url);
@@ -37,7 +49,16 @@ class LocationService {
     }
   }
 
-  // Get the current device location
+  /// Gets the current device location and converts it to a Location object.
+  ///
+  /// This method:
+  /// 1. Checks if location services are enabled
+  /// 2. Requests location permissions if needed
+  /// 3. Gets the current position using Geolocator
+  /// 4. Reverse geocodes the coordinates to get an address
+  ///
+  /// @return A Future that resolves to a Location object with the current position
+  /// @throws Exception if location services are disabled or permissions are denied
   Future<Location> getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -60,10 +81,17 @@ class LocationService {
     return reverseGeocode(position.latitude, position.longitude);
   }
 
-  // Reverse geocode coordinates to get an address
+  /// Converts geographic coordinates to a human-readable address.
+  ///
+  /// Uses the Google Geocoding API to perform reverse geocoding, converting
+  /// latitude and longitude into a formatted address.
+  ///
+  /// @param latitude The latitude coordinate
+  /// @param longitude The longitude coordinate
+  /// @return A Future that resolves to a Location object with the coordinates and address
   Future<Location> reverseGeocode(double latitude, double longitude) async {
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=$googleApiKey'
+      'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=${dotenv.env['GOOGLE_API_KEY']}'
     );
 
     final response = await http.get(url);
@@ -95,20 +123,32 @@ class LocationService {
     }
   }
 
-  // Get place suggestions (handled by place_service.dart now)
+  /// Legacy method that is no longer implemented.
+  ///
+  /// This method is deprecated and will throw an UnimplementedError.
+  /// Use PlaceService.getPlaceSuggestions instead for place autocomplete functionality.
+  ///
+  /// @param input The search text
+  /// @throws UnimplementedError Always throws this error
   Future<List<Map<String, dynamic>>> getPlaceSuggestions(String input) async {
     throw UnimplementedError(
       'Use PlaceService.getPlaceSuggestions instead of LocationService for autocomplete.'
     );
   }
 
-  // ✅ Corrected: Get place details using the right API
+  /// Retrieves detailed information for a place using its place ID.
+  /// 
+  /// This method uses the Google Places API Details endpoint to get address and
+  /// geometry information for a specific place.
+  /// 
+  /// @param placeId The Google Places API ID of the place
+  /// @return A Future that resolves to a Location object with the place details
   Future<Location> getPlaceDetails(String placeId) async {
     final url = Uri.parse(
       'https://maps.googleapis.com/maps/api/place/details/json'
       '?place_id=$placeId'
       '&fields=formatted_address,geometry'
-      '&key=$googleApiKey'
+      '&key=${dotenv.env['GOOGLE_API_KEY']}'
     );
 
     final response = await http.get(url);

@@ -5,11 +5,26 @@ import '../providers/location_provider.dart';
 import '../services/location_service.dart';
 import '../providers/place_provider.dart';
 
+/// A widget for inputting a location, with autocomplete suggestions and a 'use current location' button.
+///
+/// This widget integrates with [LocationProvider] and [PlaceProvider] to manage state
+/// and fetch suggestions. It uses [flutter_typeahead] for the autocomplete functionality.
 class LocationInputWidget extends StatefulWidget {
+  /// Whether this input field is for Location A (true) or Location B (false).
   final bool isLocationA;
+  
+  /// Placeholder text displayed in the input field.
   final String placeholder;
+  
+  /// Service for location-related operations (geocoding, place details).
   final LocationService locationService;
 
+  /// Creates a new LocationInputWidget instance.
+  ///
+  /// @param key Widget key for identification
+  /// @param isLocationA Whether this input is for Location A or B
+  /// @param placeholder Placeholder text for the input field
+  /// @param locationService Required service for location operations
   const LocationInputWidget({
     super.key,
     required this.isLocationA,
@@ -21,7 +36,11 @@ class LocationInputWidget extends StatefulWidget {
   State<LocationInputWidget> createState() => _LocationInputWidgetState();
 }
 
+/// The state class for the LocationInputWidget.
+///
+/// Manages the text controller and handles interactions with location providers.
 class _LocationInputWidgetState extends State<LocationInputWidget> {
+  /// Controller for the text input field
   final TextEditingController _controller = TextEditingController();
 
   @override

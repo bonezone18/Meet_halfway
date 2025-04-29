@@ -5,14 +5,25 @@ import '../models/place_model.dart';
 import '../models/location_model.dart';
 import 'dart:math' as math;
 
-
+/// Service for interacting with the Google Places API.
+///
+/// This service provides methods for searching nearby places, getting place details,
+/// retrieving place photos, and handling place autocomplete suggestions.
+/// It uses the Google Places API for all operations and requires a valid API key.
 class PlaceService {
   
-//final String _googleApiKey;
-
-//PlaceService(this._googleApiKey);
-
-  // Search for places near the midpoint
+  /// Searches for places near the specified midpoint location.
+  /// 
+  /// This method queries the Google Places API's nearby search endpoint to find
+  /// places within the specified radius of the midpoint. Results can be filtered
+  /// by type and keyword, and are sorted by distance from the midpoint.
+  /// 
+  /// @param midpoint The central location to search around
+  /// @param radius The search radius in meters (defaults to 1500)
+  /// @param type Optional place type filter (e.g., "restaurant", "cafe")
+  /// @param keyword Optional keyword to filter results
+  /// @param maxResults Maximum number of results to return (defaults to 10)
+  /// @return A list of Place objects sorted by distance from the midpoint
   Future<List<Place>> searchNearbyPlaces(
     Location midpoint, 
     {
@@ -28,7 +39,7 @@ class PlaceService {
       '&radius=$radius'
       '${type != null ? '&type=$type' : ''}'
       '${keyword != null ? '&keyword=$keyword' : ''}'
-      '&key=$googleApiKey'
+      '&key=${dotenv.env['GOOGLE_API_KEY']}'
     );
     
     final response = await http.get(url);
@@ -71,11 +82,18 @@ class PlaceService {
     }
   }
 
+  /// Gets place suggestions based on user input text.
+  /// 
+  /// This method uses the Google Places Autocomplete API to provide search suggestions
+  /// as the user types. It returns a list of place descriptions and their IDs.
+  /// 
+  /// @param input The user's search text
+  /// @return A list of maps containing place descriptions and IDs
   Future<List<Map<String, dynamic>>> getPlaceSuggestions(String input) async {
   if (input.trim().isEmpty) return [];
   final url = Uri.parse(
-    'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-    '?input=$input&key=$googleApiKey'
+    "https://maps.googleapis.com/maps/api/place/autocomplete/json"
+    "?input=$input&key=${dotenv.env["GOOGLE_API_KEY"]}"
   );
 
   final response = await http.get(url);
@@ -101,13 +119,20 @@ class PlaceService {
 }
 
   
-  // Get place details
+  /// Retrieves detailed information for a specific place using its place ID.
+  /// 
+  /// This method queries the Google Places API Details endpoint to get comprehensive
+  /// information about a place, including address, geometry, rating, photos, etc.
+  /// 
+  /// @param placeId The Google Places API ID of the place
+  /// @param distanceFromMidpoint The pre-calculated distance from the midpoint (used for sorting/display)
+  /// @return A Future that resolves to a Place object with detailed information
   Future<Place> getPlaceDetails(String placeId, double distanceFromMidpoint) async {
     final url = Uri.parse(
       'https://maps.googleapis.com/maps/api/place/details/json'
       '?place_id=$placeId'
       '&fields=name,formatted_address,geometry,rating,user_ratings_total,photos,opening_hours,types,price_level,vicinity,icon'
-      '&key=$googleApiKey'
+      '&key=${dotenv.env['GOOGLE_API_KEY']}'
     );
     
     print('GET URL: $url');
@@ -128,15 +153,26 @@ class PlaceService {
     }
   }
   
-  // Get place photo
+  /// Constructs the URL for retrieving a place photo from the Google Places API.
+  /// 
+  /// @param photoReference The reference ID of the photo (obtained from place details)
+  /// @param maxWidth The maximum width of the photo in pixels (defaults to 400)
+  /// @return The URL string for the place photo
   String getPhotoUrl(String photoReference, {int maxWidth = 400}) {
     return 'https://maps.googleapis.com/maps/api/place/photo'
       '?maxwidth=$maxWidth'
       '&photo_reference=$photoReference'
-      '&key=$googleApiKey';
+      '&key=${dotenv.env['GOOGLE_API_KEY']}';
   }
   
-  // Calculate distance between two locations using Haversine formula
+  /// Calculates the distance between two locations using the Haversine formula.
+  /// 
+  /// This private method computes the great-circle distance between two points on a sphere
+  /// given their latitudes and longitudes. It accounts for the Earth's curvature.
+  /// 
+  /// @param location1 The first location
+  /// @param location2 The second location
+  /// @return The distance between the locations in kilometers
   double _calculateDistance(Location location1, Location location2) {
     const earthRadius = 6371.0; // Earth's radius in kilometers
     
@@ -160,22 +196,41 @@ class PlaceService {
     return distance;
   }
   
-  // Helper method to convert degrees to radians
+  /// Helper method to convert degrees to radians.
+  /// 
+  /// @param degrees The angle in degrees
+  /// @return The angle converted to radians
   double _degreesToRadians(double degrees) {
     return degrees * (Math.pi / 180.0);
   }
   
-  // Helper method to square a number
+  /// Helper method to square a number.
+  /// 
+  /// @param value The number to square
+  /// @return The square of the input value
   double _square(double value) {
     return value * value;
   }
 }
 
 // Math utility class to avoid importing dart:math
+/// Utility class that provides math operations.
+///
+/// This class wraps the dart:math library functions to provide a cleaner interface
+/// and avoid direct imports in multiple places.
 class Math {
+  /// Returns the sine of the specified angle in radians.
   static double sin(double x) => math.sin(x);
+  
+  /// Returns the cosine of the specified angle in radians.
   static double cos(double x) => math.cos(x);
+  
+  /// Returns the square root of the specified value.
   static double sqrt(double x) => math.sqrt(x);
+  
+  /// Returns the angle in radians between the positive x-axis and the point (x, y).
   static double atan2(double y, double x) => math.atan2(y, x);
+  
+  /// The mathematical constant π (pi).
   static const double pi = math.pi;
 }

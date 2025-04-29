@@ -6,9 +6,21 @@ import '../providers/midpoint_provider.dart';
 import '../screens/results_screen.dart';
 import '../widgets/location_input_widget.dart';
 
+/// The main screen of the application where users input locations.
+///
+/// This screen allows users to:
+/// - Input their own location
+/// - Input their friend's location
+/// - Calculate the midpoint between these locations
+/// - Navigate to the results screen to see meeting point suggestions
 class HomeScreen extends StatelessWidget {
+  /// Service for location-related operations
   final LocationService locationService;
 
+  /// Creates a new HomeScreen instance.
+  ///
+  /// @param key Widget key for identification
+  /// @param locationService Required service for location operations
   const HomeScreen({super.key, required this.locationService});
 
   @override
