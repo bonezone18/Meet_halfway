@@ -16,6 +16,8 @@ Future<void> main() async {
   // Ensure all bindings are initialized and load .env
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env"); // <-- Load .env before runApp
+  print('GOOGLE_MAPS_API_KEY: ${dotenv.env['GOOGLE_MAPS_API_KEY']}');
+
 
   runApp(const MyApp());
 }

@@ -18,12 +18,23 @@ class LocationService {
   ///
   /// @param address The address string to geocode
   /// @return A Future that resolves to a Location object with coordinates and formatted address
-  Future<Location> geocodeAddress(String address) async {
-    final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}'
-    );
+  /// 
+  /// 
+  
+Future<Location> geocodeAddress(String address) async {
+  final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
+  if (apiKey == null || apiKey.isEmpty) {
+    throw Exception('Google Maps API key is missing from .env');
+  }
 
-    final response = await http.get(url);
+  final url = Uri.parse(
+    'https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=$apiKey'
+  );
+
+  final response = await http.get(url);
+
+
+
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
