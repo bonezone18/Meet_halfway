@@ -27,7 +27,7 @@ class PlaceService {
   Future<List<Place>> searchNearbyPlaces(
     Location midpoint, 
     {
-      double radius = 1500, // Default 1.5km radius
+      double radius = 5000, // Default 1.5km radius
       String? type,
       String? keyword,
       int maxResults = 10,
@@ -39,7 +39,7 @@ class PlaceService {
       '&radius=$radius'
       '${type != null ? '&type=$type' : ''}'
       '${keyword != null ? '&keyword=$keyword' : ''}'
-      '&key=${dotenv.env['GOOGLE_API_KEY']}'
+      '&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}'
     );
     
     final response = await http.get(url);
@@ -93,7 +93,7 @@ class PlaceService {
   if (input.trim().isEmpty) return [];
   final url = Uri.parse(
     "https://maps.googleapis.com/maps/api/place/autocomplete/json"
-    "?input=$input&key=${dotenv.env["GOOGLE_API_KEY"]}"
+    "?input=$input&key=${dotenv.env["GOOGLE_MAPS_API_KEY"]}"
   );
 
   final response = await http.get(url);
@@ -132,7 +132,7 @@ class PlaceService {
       'https://maps.googleapis.com/maps/api/place/details/json'
       '?place_id=$placeId'
       '&fields=name,formatted_address,geometry,rating,user_ratings_total,photos,opening_hours,types,price_level,vicinity,icon'
-      '&key=${dotenv.env['GOOGLE_API_KEY']}'
+      '&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}'
     );
     
     print('GET URL: $url');
@@ -162,7 +162,7 @@ class PlaceService {
     return 'https://maps.googleapis.com/maps/api/place/photo'
       '?maxwidth=$maxWidth'
       '&photo_reference=$photoReference'
-      '&key=${dotenv.env['GOOGLE_API_KEY']}';
+      '&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}';
   }
   
   /// Calculates the distance between two locations using the Haversine formula.
