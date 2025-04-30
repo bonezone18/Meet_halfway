@@ -31,6 +31,7 @@ class PlaceProvider with ChangeNotifier {
   String get errorMessage => _errorMessage;
   Set<String> get selectedCategories => _selectedCategories;
   SortOption get sortOption => _sortOption;
+  bool get hasError => _errorMessage.isNotEmpty;
 
   /// Toggles the selection of a category and reapplies filters.
   void toggleCategory(String category) {

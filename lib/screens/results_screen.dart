@@ -91,25 +91,53 @@ class _ResultsScreenState extends State<ResultsScreen> {
       ),
       body: placeProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : placeProvider.filteredPlaces.isEmpty
-              ? const Center(child: Text('No places found.'))
-              : Column(
-                  children: [
-                    if (midpoint != null) _buildMap(midpoint),
-                    if (midpoint != null)
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
-                        transitionBuilder: (child, animation) => SlideTransition(
-                          position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation),
-                          child: FadeTransition(opacity: animation, child: child),
-                        ),
-                        child: midpointProvider.buildTripSummaryCard(),
-                      ),
-                    _buildFilterChips(placeProvider),
-                    _buildSortDropdown(placeProvider),
-                    Expanded(child: _buildPlacesList(placeProvider)),
-                  ],
-                ),
+          : placeProvider.hasError
+              ? _buildErrorWidget(placeProvider.errorMessage)
+              : placeProvider.filteredPlaces.isEmpty
+                  ? const Center(child: Text('No places found.'))
+                  : Column(
+                      children: [
+                        if (midpoint != null) _buildMap(midpoint),
+                        if (midpoint != null)
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 400),
+                            transitionBuilder: (child, animation) => SlideTransition(
+                              position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation),
+                              child: FadeTransition(opacity: animation, child: child),
+                            ),
+                            child: midpointProvider.buildTripSummaryCard(),
+                          ),
+                        _buildFilterChips(placeProvider),
+                        _buildSortDropdown(placeProvider),
+                        Expanded(child: _buildPlacesList(placeProvider)),
+                      ],
+                    ),
+    );
+  }
+
+  Widget _buildErrorWidget(String errorMessage) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.redAccent, size: 60),
+            const SizedBox(height: 20),
+            Text(
+              'Oops! Something went wrong.',
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              errorMessage,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
