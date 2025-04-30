@@ -1,8 +1,8 @@
-# Meeting Point Finder App
+# Meet Halfway App
 
 ## 🚀 Project Overview
 
-The Meeting Point Finder App is a mobile application that helps two or more users find a mutually convenient location between their starting points. Designed to simplify meetups for friends, couples, coworkers, and co-parents, the app calculates the optimal midpoint and suggests venues based on distance, travel time, user preferences, and context.
+The Meet Halfway App is a mobile application that helps two or more users find a mutually convenient location between their starting points. Designed to simplify meetups for friends, couples, coworkers, and co-parents, the app calculates the optimal midpoint and suggests venues based on distance, travel time, user preferences, and context.
 
 ## 📱 Core Features
 
