@@ -18,63 +18,80 @@ class HomeScreen extends StatelessWidget {
   final LocationService locationService;
 
   /// Creates a new HomeScreen instance.
-  ///
-  /// @param key Widget key for identification
-  /// @param locationService Required service for location operations
   const HomeScreen({super.key, required this.locationService});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Meeting Point Finder')),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LocationInputWidget(
-            isLocationA: true,
-            placeholder: 'Your location',
-            locationService: locationService,
-          ),
-          LocationInputWidget(
-            isLocationA: false,
-            placeholder: "Friend's location",
-            locationService: locationService,
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: ElevatedButton(
-              onPressed: () async {
-                final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-                final midpointProvider = Provider.of<MidpointProvider>(context, listen: false);
-
-                final locA = locationProvider.locationA;
-                final locB = locationProvider.locationB;
-
-                if (locA != null && locB != null) {
-                  // Safely defer state changes until after build is complete
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    // Calculate and store the midpoint using provider
-                    await midpointProvider.calculateMidpoint(locA, locB);
-
-                    // Navigate to the results screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ResultsScreen(),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      LocationInputWidget(
+                        isLocationA: true,
+                        placeholder: 'Your location',
+                        locationService: locationService,
                       ),
-                    );
-                  });
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please set both locations.')),
-                );
-                }
-              },
-              child: const Text('Meet Halfway'),
-            ),
-          ),
-        ],
+                      const SizedBox(height: 32),
+
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+                            final midpointProvider = Provider.of<MidpointProvider>(context, listen: false);
+
+                            final locA = locationProvider.locationA;
+                            final locB = locationProvider.locationB;
+
+                            if (locA != null && locB != null) {
+                              await midpointProvider.calculateMidpoint(locA, locB);
+                              if (context.mounted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const ResultsScreen()),
+                                );
+                              }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please set both locations.')),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            shape: const CircleBorder(),
+                            padding: const EdgeInsets.all(60),
+                            backgroundColor: Theme.of(context).primaryColor,
+                            elevation: 8,
+                          ),
+                          child: const Icon(Icons.location_searching, size: 48, color: Colors.white),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      LocationInputWidget(
+                        isLocationA: false,
+                        placeholder: "Friend's location",
+                        locationService: locationService,
+                      ),
+
+                      const SizedBox(height: 40), // additional padding for autocomplete
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -69,6 +69,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Widget build(BuildContext context) {
     final midpointProvider = Provider.of<MidpointProvider>(context);
     final placeProvider = Provider.of<PlaceProvider>(context);
+    final locationProvider = Provider.of<LocationProvider>(context);
     final midpoint = midpointProvider.midpoint;
 
     return Scaffold(
@@ -78,7 +79,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              final locationProvider = Provider.of<LocationProvider>(context, listen: false);
               final locA = locationProvider.locationA;
               final locB = locationProvider.locationB;
 
@@ -97,7 +97,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   ? const Center(child: Text('No places found.'))
                   : Column(
                       children: [
-                        if (midpoint != null) _buildMap(midpoint),
+                        if (midpoint != null)
+                          _buildInteractiveMap(midpoint, locationProvider, midpointProvider, placeProvider),
                         if (midpoint != null)
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 400),
@@ -141,9 +142,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
   }
 
-  Widget _buildMap(Location midpoint) {
+  Widget _buildInteractiveMap(Location midpoint, LocationProvider locationProvider, MidpointProvider midpointProvider, PlaceProvider placeProvider) {
     return SizedBox(
-      height: 200,
+      height: 300,
       child: GoogleMap(
         initialCameraPosition: CameraPosition(
           target: LatLng(midpoint.latitude, midpoint.longitude),
@@ -153,9 +154,29 @@ class _ResultsScreenState extends State<ResultsScreen> {
           Marker(
             markerId: const MarkerId('midpoint'),
             position: LatLng(midpoint.latitude, midpoint.longitude),
-            infoWindow: const InfoWindow(title: 'Midpoint'),
+            draggable: true,
+            infoWindow: const InfoWindow(title: 'Drag to adjust midpoint'),
+            onDragEnd: (LatLng newPosition) async {
+              final newMidpoint = Location(
+                latitude: newPosition.latitude,
+                longitude: newPosition.longitude,
+                name: 'Adjusted Midpoint',
+              );
+              midpointProvider.setMidpoint(newMidpoint);
+
+              final locA = locationProvider.locationA;
+              final locB = locationProvider.locationB;
+
+              if (locA != null && locB != null) {
+                await placeProvider.searchPlaces(newMidpoint, locA, locB);
+              }
+            },
           ),
         },
+        zoomGesturesEnabled: true,
+        scrollGesturesEnabled: true,
+        myLocationButtonEnabled: false,
+        zoomControlsEnabled: true,
       ),
     );
   }
