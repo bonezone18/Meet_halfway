@@ -1,3 +1,4 @@
+// results_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,6 +8,9 @@ import '../models/location_model.dart';
 import '../providers/place_provider.dart';
 import '../providers/midpoint_provider.dart';
 import 'place_details_screen.dart';
+import '../providers/location_provider.dart';
+import '../utils/navigation_transitions.dart';
+
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({Key? key}) : super(key: key);
@@ -16,6 +20,22 @@ class ResultsScreen extends StatefulWidget {
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
+  PageRouteBuilder _buildFadeRoute(Widget page) {
+    return PageRouteBuilder(
+      transitionDuration: Duration(milliseconds: 400),
+      reverseTransitionDuration: Duration(milliseconds: 400),
+      pageBuilder: (_, animation, __) => FadeTransition(
+        opacity: animation,
+        child: page,
+      ),
+      transitionsBuilder: (_, animation, __, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+    );
+  }
   final Map<String, String> _categoryLabels = {
     'restaurant': 'Restaurants',
     'cafe': 'Cafes',
@@ -42,8 +62,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final midpoint = Provider.of<MidpointProvider>(context).midpoint;
+    final midpointProvider = Provider.of<MidpointProvider>(context);
     final placeProvider = Provider.of<PlaceProvider>(context);
+    final midpoint = midpointProvider.midpoint;
 
     return Scaffold(
       appBar: AppBar(
@@ -66,6 +87,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
               : Column(
                   children: [
                     if (midpoint != null) _buildMap(midpoint),
+                    if (midpoint != null)
+  AnimatedSwitcher(
+    duration: Duration(milliseconds: 400),
+    transitionBuilder: (child, animation) => SlideTransition(
+      position: Tween<Offset>(begin: Offset(0, 0.1), end: Offset.zero).animate(animation),
+      child: FadeTransition(opacity: animation, child: child),
+    ),
+    child: midpointProvider.buildTripSummaryCard(),
+  ),
                     _buildFilterChips(placeProvider),
                     _buildSortDropdown(placeProvider),
                     Expanded(child: _buildPlacesList(placeProvider)),
@@ -147,14 +177,71 @@ class _ResultsScreenState extends State<ResultsScreen> {
       itemCount: provider.filteredPlaces.length,
       itemBuilder: (context, index) {
         final place = provider.filteredPlaces[index];
-        return ListTile(
-          title: Text(place.name),
-          subtitle: Text(place.vicinity ?? place.address ?? 'No address'),
-          trailing: Text('${place.distanceFromMidpoint.toStringAsFixed(1)} km'),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PlaceDetailsScreen(place: place),
+        final photoUrl = place.photoReference != null
+            ? provider.getPhotoUrl(place, maxWidth: 200)
+            : null;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 3,
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+              _buildFadeRoute(PlaceDetailsScreen(place: place)),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: photoUrl != null
+                          ? Image.network(
+                              photoUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.image_not_supported),
+                              ),
+                            )
+                          : Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image_not_supported),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(place.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 4),
+                        Text(place.vicinity ?? place.address ?? 'No address', style: TextStyle(color: Colors.grey[700])),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            if (place.rating != null) ...[
+                              Icon(Icons.star, size: 16, color: Colors.amber[700]),
+                              const SizedBox(width: 4),
+                              Text('${place.rating!.toStringAsFixed(1)} (${place.userRatingsTotal ?? 0})', style: const TextStyle(fontSize: 14)),
+                              const SizedBox(width: 16),
+                            ],
+                            Icon(Icons.location_on, size: 16, color: Colors.blue[700]),
+                            const SizedBox(width: 4),
+                            Text('${place.distanceFromMidpoint.toStringAsFixed(1)} km', style: const TextStyle(fontSize: 14)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         );

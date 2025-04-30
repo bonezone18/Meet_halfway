@@ -12,6 +12,7 @@ import 'services/location_service.dart';
 import 'services/place_service.dart';
 import 'services/directions_service.dart';
 
+
 Future<void> main() async {
   // Ensure all bindings are initialized and load .env
   WidgetsFlutterBinding.ensureInitialized();

@@ -3,7 +3,24 @@
 /// This model is used throughout the application to represent user locations,
 /// midpoints, and places. It contains geographic coordinates (latitude/longitude)
 /// and optional metadata such as name, address, and a flag for current location.
+import 'dart:math';
+
 class Location {
+
+  double distanceTo(Location other) {
+  const earthRadius = 6371.0; // km
+  final dLat = _toRadians(other.latitude - latitude);
+  final dLon = _toRadians(other.longitude - longitude);
+  final a = 
+      (sin(dLat / 2) * sin(dLat / 2)) +
+      cos(_toRadians(latitude)) * cos(_toRadians(other.latitude)) *
+      (sin(dLon / 2) * sin(dLon / 2));
+  final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  return earthRadius * c;
+}
+
+double _toRadians(double degree) => degree * (pi / 180);
+
   /// Optional unique identifier for the location
   final String? id;
   

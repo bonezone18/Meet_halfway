@@ -1,4 +1,6 @@
+// midpoint_provider.dart
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../models/location_model.dart';
 import '../services/midpoint_calculator.dart';
 
@@ -8,50 +10,117 @@ import '../services/midpoint_calculator.dart';
 /// It provides methods for calculating both geographic and weighted midpoints,
 /// as well as calculating distances between locations.
 class MidpointProvider with ChangeNotifier {
-  /// The calculated midpoint location
   Location? _midpoint;
-  
-  /// Whether a calculation is currently in progress
+  Location? _locationA;
+  Location? _locationB;
   bool _isLoading = false;
-  
-  /// Current error message, if any
   String _errorMessage = '';
-  
-  /// Getter for the calculated midpoint
+
+  /// The calculated midpoint location
   Location? get midpoint => _midpoint;
-  
+
+  /// The two user-provided input locations
+  Location? get locationA => _locationA;
+  Location? get locationB => _locationB;
+
   /// Whether a calculation is currently in progress
   bool get isLoading => _isLoading;
-  
+
   /// Current error message, if any
   String get errorMessage => _errorMessage;
-  
+
   /// Whether there is an active error
   bool get hasError => _errorMessage.isNotEmpty;
-  
+
+  /// The distance from location A to the midpoint (in miles)
+  double get distanceFromA =>
+      (_midpoint != null && _locationA != null) ? _locationA!.distanceTo(_midpoint!) * 0.621371 : 0;
+
+  /// The distance from location B to the midpoint (in miles)
+  double get distanceFromB =>
+      (_midpoint != null && _locationB != null) ? _locationB!.distanceTo(_midpoint!) * 0.621371 : 0;
+
+  /// The absolute difference in distance between A and B to midpoint (in miles)
+  double get midpointFairnessDelta =>
+      (distanceFromA - distanceFromB).abs();
+
+  /// A textual label indicating how fair the midpoint is
+  String get midpointFairnessLabel {
+    if (_locationA == null || _locationB == null || _midpoint == null) {
+      return 'Unknown';
+    }
+    final delta = midpointFairnessDelta;
+    if (delta < 1.0) return 'Perfectly Fair';
+    if (delta < 3.0) return 'Moderately Fair';
+    return 'Unbalanced';
+  }
+
+  /// Returns a styled card widget summarizing the trip fairness and distances.
+  Widget buildTripSummaryCard() {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Trip Summary',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.person_pin_circle, color: Colors.blue),
+                const SizedBox(width: 8),
+                Text('From You: ${distanceFromA.toStringAsFixed(1)} mi'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.person_pin_circle_outlined, color: Colors.green),
+                const SizedBox(width: 8),
+                Text('From Friend: ${distanceFromB.toStringAsFixed(1)} mi'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.balance, color: _getFairnessColor(), size: 20),
+                const SizedBox(width: 8),
+                Text('Fairness: $midpointFairnessLabel',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: _getFairnessColor(),
+                    )),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Internal color helper based on fairness delta
+  Color _getFairnessColor() {
+    if (midpointFairnessDelta < 1.0) return Colors.green;
+    if (midpointFairnessDelta < 3.0) return Colors.orange;
+    return Colors.red;
+  }
+
   /// Calculates the geographic midpoint between two locations.
-  ///
-  /// This method uses [MidpointCalculator.calculateGeographicMidpoint] to perform the calculation.
-  /// It handles the loading state and error handling automatically.
-  ///
-  /// @param locationA The first location
-  /// @param locationB The second location
-  /// @return A Future that completes when the calculation is done
-  Future<void> calculateMidpoint(Location locationA, Location locationB) async {
+  Future<void> calculateMidpoint(Location a, Location b) async {
     _setLoading(true);
     _clearError();
-    
+
     try {
-      // Use a small delay to simulate calculation time
       await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Calculate the midpoint
-      final midpoint = MidpointCalculator.calculateGeographicMidpoint(
-        locationA, 
-        locationB
-      );
-      
-      _midpoint = midpoint;
+      _midpoint = MidpointCalculator.calculateGeographicMidpoint(a, b);
+      _locationA = a;
+      _locationB = b;
       notifyListeners();
     } catch (e) {
       _setError('Failed to calculate midpoint: ${e.toString()}');
@@ -59,40 +128,16 @@ class MidpointProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
-  
-  /// Calculates a weighted midpoint between two locations based on specified weights.
-  ///
-  /// This method uses [MidpointCalculator.calculateWeightedMidpoint] to perform the calculation.
-  /// The weights can represent factors like travel time, cost, or preference.
-  /// It handles the loading state and error handling automatically.
-  ///
-  /// @param locationA The first location
-  /// @param locationB The second location
-  /// @param weightA The weight associated with the first location
-  /// @param weightB The weight associated with the second location
-  /// @return A Future that completes when the calculation is done
-  Future<void> calculateWeightedMidpoint(
-    Location locationA, 
-    Location locationB,
-    double weightA,
-    double weightB
-  ) async {
+
+  /// Calculates a weighted midpoint between two locations.
+  Future<void> calculateWeightedMidpoint(Location a, Location b, double weightA, double weightB) async {
     _setLoading(true);
     _clearError();
-    
     try {
-      // Use a small delay to simulate calculation time
       await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Calculate the weighted midpoint
-      final midpoint = MidpointCalculator.calculateWeightedMidpoint(
-        locationA, 
-        locationB,
-        weightA,
-        weightB
-      );
-      
-      _midpoint = midpoint;
+      _midpoint = MidpointCalculator.calculateWeightedMidpoint(a, b, weightA, weightB);
+      _locationA = a;
+      _locationB = b;
       notifyListeners();
     } catch (e) {
       _setError('Failed to calculate weighted midpoint: ${e.toString()}');
@@ -100,55 +145,40 @@ class MidpointProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   /// Calculates the distance between two locations in kilometers.
-  ///
-  /// This method is a wrapper around [MidpointCalculator.calculateDistance].
-  ///
-  /// @param locationA The first location
-  /// @param locationB The second location
-  /// @return The distance between the two locations in kilometers
-  double calculateDistance(Location locationA, Location locationB) {
-    return MidpointCalculator.calculateDistance(locationA, locationB);
+  double calculateDistance(Location a, Location b) {
+    return MidpointCalculator.calculateDistance(a, b);
   }
 
   /// Sets the midpoint directly to the provided location.
-  ///
-  /// This method allows manually setting the midpoint without calculation.
-  /// It also clears any error messages and notifies listeners.
-  ///
-  /// @param midpoint The location to set as the midpoint
   void setMidpoint(Location midpoint) {
-  _midpoint = midpoint;
-  _clearError();
-  notifyListeners();
-  }
-
-  /// Clears the calculated midpoint and any error messages.
-  ///
-  /// This method resets the midpoint state and notifies listeners.
-  void clearMidpoint() {
-    _midpoint = null;
+    _midpoint = midpoint;
     _clearError();
     notifyListeners();
   }
-  
-  /// Sets the loading state and notifies listeners.
-  /// 
-  /// @param loading The new loading state
-  void _setLoading(bool loading) {
-    _isLoading = loading;
+
+  /// Clears all location and midpoint data.
+  void clearMidpoint() {
+    _midpoint = null;
+    _locationA = null;
+    _locationB = null;
+    _clearError();
     notifyListeners();
   }
-  
+
+  /// Sets the loading state and notifies listeners.
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
   /// Sets an error message and notifies listeners.
-  /// 
-  /// @param message The error message to set
   void _setError(String message) {
     _errorMessage = message;
     notifyListeners();
   }
-  
+
   /// Clears any error message and notifies listeners.
   void _clearError() {
     _errorMessage = '';

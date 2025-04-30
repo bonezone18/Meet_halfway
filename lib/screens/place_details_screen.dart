@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/animation.dart';
 import '../models/place_model.dart';
 import '../models/location_model.dart';
 import '../providers/place_provider.dart';
@@ -16,12 +17,24 @@ class PlaceDetailsScreen extends StatefulWidget {
   State<PlaceDetailsScreen> createState() => _PlaceDetailsScreenState();
 }
 
-class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
+class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTickerProviderStateMixin {
   bool _isGettingDirections = false;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+      lowerBound: 0.0,
+      upperBound: 0.05,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final locationProvider = Provider.of<LocationProvider>(context, listen: false);
       final directionsProvider = Provider.of<DirectionsProvider>(context, listen: false);
@@ -31,17 +44,23 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
 
       if (locationA != null) {
         directionsProvider.getDirectionsFromA(
-        locationA,
-        Location(latitude: widget.place.latitude, longitude: widget.place.longitude),
-      );
+          locationA,
+          Location(latitude: widget.place.latitude, longitude: widget.place.longitude),
+        );
       }
       if (locationB != null) {
         directionsProvider.getDirectionsFromB(
-        locationB,
-        Location(latitude: widget.place.latitude, longitude: widget.place.longitude),
-      );
+          locationB,
+          Location(latitude: widget.place.latitude, longitude: widget.place.longitude),
+        );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -76,7 +95,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   const SizedBox(height: 16),
                   _buildDetailsCard(widget.place),
                   const SizedBox(height: 24),
-                  _buildActions(context),
+                  _buildAnimatedButtons(context),
                 ],
               ),
             ),
@@ -216,30 +235,58 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     );
   }
 
-  Widget _buildActions(BuildContext context) {
+  Widget _buildAnimatedButtons(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        ElevatedButton.icon(
-          onPressed: () {
+        GestureDetector(
+          onTapDown: (_) => _animationController.forward(),
+          onTapUp: (_) => _animationController.reverse(),
+          onTapCancel: () => _animationController.reverse(),
+          onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => DirectionsScreen(place: widget.place)),
             );
           },
-          icon: const Icon(Icons.directions),
-          label: const Text('Directions'),
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4285F4)),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: ElevatedButton.icon(
+              onPressed: null,
+              icon: const Icon(Icons.directions),
+              label: const Text('Directions'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4285F4),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 4,
+              ),
+            ),
+          ),
         ),
-        ElevatedButton.icon(
-          onPressed: () {
+        GestureDetector(
+          onTapDown: (_) => _animationController.forward(),
+          onTapUp: (_) => _animationController.reverse(),
+          onTapCancel: () => _animationController.reverse(),
+          onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Share functionality coming soon')),
             );
           },
-          icon: const Icon(Icons.share),
-          label: const Text('Share'),
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF34A853)),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: ElevatedButton.icon(
+              onPressed: null,
+              icon: const Icon(Icons.share),
+              label: const Text('Share'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF34A853),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 4,
+              ),
+            ),
+          ),
         ),
       ],
     );
