@@ -11,7 +11,6 @@ import 'place_details_screen.dart';
 import '../providers/location_provider.dart';
 import '../utils/navigation_transitions.dart';
 
-
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({Key? key}) : super(key: key);
 
@@ -22,8 +21,8 @@ class ResultsScreen extends StatefulWidget {
 class _ResultsScreenState extends State<ResultsScreen> {
   PageRouteBuilder _buildFadeRoute(Widget page) {
     return PageRouteBuilder(
-      transitionDuration: Duration(milliseconds: 400),
-      reverseTransitionDuration: Duration(milliseconds: 400),
+      transitionDuration: const Duration(milliseconds: 400),
+      reverseTransitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (_, animation, __) => FadeTransition(
         opacity: animation,
         child: page,
@@ -36,6 +35,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       },
     );
   }
+
   final Map<String, String> _categoryLabels = {
     'restaurant': 'Restaurants',
     'cafe': 'Cafes',
@@ -53,9 +53,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final midpoint = Provider.of<MidpointProvider>(context, listen: false).midpoint;
-      if (midpoint != null) {
-        Provider.of<PlaceProvider>(context, listen: false).searchPlaces(midpoint);
+      final midpointProvider = Provider.of<MidpointProvider>(context, listen: false);
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      final midpoint = midpointProvider.midpoint;
+      final locA = locationProvider.locationA;
+      final locB = locationProvider.locationB;
+
+      if (midpoint != null && locA != null && locB != null) {
+        Provider.of<PlaceProvider>(context, listen: false).searchPlaces(midpoint, locA, locB);
       }
     });
   }
@@ -73,8 +78,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              if (midpoint != null) {
-                placeProvider.searchPlaces(midpoint);
+              final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+              final locA = locationProvider.locationA;
+              final locB = locationProvider.locationB;
+
+              if (midpoint != null && locA != null && locB != null) {
+                placeProvider.searchPlaces(midpoint, locA, locB);
               }
             },
           ),
@@ -88,14 +97,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   children: [
                     if (midpoint != null) _buildMap(midpoint),
                     if (midpoint != null)
-  AnimatedSwitcher(
-    duration: Duration(milliseconds: 400),
-    transitionBuilder: (child, animation) => SlideTransition(
-      position: Tween<Offset>(begin: Offset(0, 0.1), end: Offset.zero).animate(animation),
-      child: FadeTransition(opacity: animation, child: child),
-    ),
-    child: midpointProvider.buildTripSummaryCard(),
-  ),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        transitionBuilder: (child, animation) => SlideTransition(
+                          position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation),
+                          child: FadeTransition(opacity: animation, child: child),
+                        ),
+                        child: midpointProvider.buildTripSummaryCard(),
+                      ),
                     _buildFilterChips(placeProvider),
                     _buildSortDropdown(placeProvider),
                     Expanded(child: _buildPlacesList(placeProvider)),
@@ -138,18 +147,16 @@ class _ResultsScreenState extends State<ResultsScreen> {
               onSelected: (_) => provider.clearCategoryFilters(),
             ),
           ),
-          ...provider.places
-              .expand((place) => place.types)
-              .toSet()
-              .where((type) => _categoryLabels.containsKey(type))
-              .map((type) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: FilterChip(
-                      label: Text(_categoryLabels[type] ?? type),
-                      selected: provider.selectedCategories.contains(type),
-                      onSelected: (_) => provider.toggleCategory(type),
-                    ),
-                  ))
+          ...provider.places.expand((place) => place.types).toSet().where((type) => _categoryLabels.containsKey(type)).map(
+                (type) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: FilterChip(
+                    label: Text(_categoryLabels[type] ?? type),
+                    selected: provider.selectedCategories.contains(type),
+                    onSelected: (_) => provider.toggleCategory(type),
+                  ),
+                ),
+              )
         ],
       ),
     );

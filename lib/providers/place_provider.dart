@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/place_model.dart';
 import '../models/location_model.dart';
 import '../services/place_service.dart';
+import '../services/midpoint_calculator.dart';
 
 /// Defines the available options for sorting the list of places.
 enum SortOption {
@@ -31,6 +32,7 @@ class PlaceProvider with ChangeNotifier {
   Set<String> get selectedCategories => _selectedCategories;
   SortOption get sortOption => _sortOption;
 
+  /// Toggles the selection of a category and reapplies filters.
   void toggleCategory(String category) {
     if (_selectedCategories.contains(category)) {
       _selectedCategories.remove(category);
@@ -40,21 +42,25 @@ class PlaceProvider with ChangeNotifier {
     _applyFilters();
   }
 
+  /// Clears all selected categories and reapplies filters.
   void clearCategoryFilters() {
     _selectedCategories.clear();
     _applyFilters();
   }
 
+  /// Sets loading state and notifies listeners.
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
   }
 
+  /// Sets an error message and notifies listeners.
   void _setError(String message) {
     _errorMessage = message;
     notifyListeners();
   }
 
+  /// Applies selected category and sorting filters to the places list.
   void _applyFilters() {
     List<Place> updated = [..._places];
 
@@ -83,13 +89,21 @@ class PlaceProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> searchPlaces(Location midpoint, {double radius = 3000}) async {
+  /// Searches for nearby places dynamically adjusting radius based on the distance between locations.
+  Future<void> searchPlaces(Location midpoint, Location locationA, Location locationB) async {
     _setLoading(true);
     _setError('');
+
+    // Calculate distance between the two provided locations
+    final distanceBetweenLocations = MidpointCalculator.calculateDistance(locationA, locationB);
+
+    // Dynamic radius calculation: half the distance, converted to meters, clamped between 3km and 50km
+    double radius = ((distanceBetweenLocations / 2) * 1000).clamp(3000, 50000);
 
     final List<Place> allResults = [];
 
     try {
+      // Perform a search for each selected category
       for (final category in _selectedCategories) {
         final results = await _placeService.searchNearbyPlaces(
           midpoint,
@@ -99,6 +113,7 @@ class PlaceProvider with ChangeNotifier {
         allResults.addAll(results);
       }
 
+      // Remove duplicate places based on their unique IDs
       final uniquePlaces = {
         for (var place in allResults) place.placeId: place
       }.values.toList();
@@ -112,6 +127,7 @@ class PlaceProvider with ChangeNotifier {
     }
   }
 
+  /// Sets the current sort option and reapplies filters.
   void setSortOption(SortOption? option) {
     if (option != null) {
       _sortOption = option;
@@ -119,10 +135,12 @@ class PlaceProvider with ChangeNotifier {
     }
   }
 
+  /// Fetches place suggestions based on user input.
   Future<List<Map<String, dynamic>>> getPlaceSuggestions(String input) {
     return _placeService.getPlaceSuggestions(input);
   }
 
+  /// Generates a URL for fetching a place photo.
   String? getPhotoUrl(Place place, {int maxWidth = 400}) {
     if (place.photoReference == null) return null;
     return _placeService.getPhotoUrl(place.photoReference!, maxWidth: maxWidth);
