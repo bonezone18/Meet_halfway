@@ -74,6 +74,8 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
     Map<String, dynamic>? directionsData,
     bool isLoading,
   ) {
+    final theme = Theme.of(context);
+
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -92,6 +94,8 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Card(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -100,14 +104,14 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Distance', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text('Distance', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
                       Text(distance['text'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Duration', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text('Duration', style: TextStyle(color: theme.colorScheme.secondary, fontSize: 12)),
                       Text(duration['text'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -131,6 +135,9 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 8.0),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                color: Colors.white,
+                elevation: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
@@ -154,6 +161,7 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
     final directionsProvider = Provider.of<DirectionsProvider>(context);
+    final theme = Theme.of(context);
 
     final locationA = locationProvider.locationA;
     final locationB = locationProvider.locationB;
@@ -168,7 +176,8 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
     return Scaffold(
       appBar: AppBar(
         title: Text('Directions to ${widget.place.name}'),
-        backgroundColor: const Color(0xFF4285F4),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -191,6 +200,7 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
                         child: ChoiceChip(
                           label: Icon(_modeIcons[mode]),
                           selected: _selectedMode == mode,
+                          selectedColor: theme.colorScheme.secondary,
                           onSelected: (selected) {
                             if (selected) {
                               setState(() {
@@ -239,7 +249,7 @@ class _DirectionsScreenState extends State<DirectionsScreen> with SingleTickerPr
                     icon: const Icon(Icons.map),
                     label: const Text('Open in Google Maps'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF34A853),
+                      backgroundColor: theme.colorScheme.secondary,
                       minimumSize: const Size(double.infinity, 50),
                     ),
                   ),

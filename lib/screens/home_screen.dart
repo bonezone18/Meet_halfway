@@ -21,17 +21,18 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Allow body to resize when keyboard appears
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(title: const Text('Meeting Point Finder')),
+      appBar: AppBar(
+        title: const Text('Meeting Point Finder'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
       body: SafeArea(
         child: GestureDetector(
-          // Dismiss keyboard when tapping outside
           onTap: () => FocusScope.of(context).unfocus(),
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
-                // Horizontal padding + bottom padding for keyboard + fixed spacing
                 padding: EdgeInsets.fromLTRB(
                   16.0,
                   0.0,
@@ -57,7 +58,6 @@ class HomeScreen extends StatelessWidget {
                         Center(
                           child: RawMaterialButton(
                             onPressed: () async {
-                              // click sound + light haptic
                               SystemSound.play(SystemSoundType.click);
                               HapticFeedback.lightImpact();
 
@@ -68,7 +68,6 @@ class HomeScreen extends StatelessWidget {
                               final locB = locProv.locationB;
 
                               if (locA != null && locB != null) {
-                                // reset filters so every search is fresh
                                 placeProv.resetCategoryFilters();
                                 await midProv.calculateMidpoint(locA, locB);
                                 if (context.mounted) {
@@ -87,8 +86,8 @@ class HomeScreen extends StatelessWidget {
                                 );
                               }
                             },
-                            elevation: 8,
-                            fillColor: Theme.of(context).primaryColor,
+                            elevation: 10,
+                            fillColor: const Color(0xFF2ECC71), // Emerald
                             shape: const CircleBorder(),
                             constraints: const BoxConstraints.tightFor(
                               width: 120,
@@ -98,7 +97,7 @@ class HomeScreen extends StatelessWidget {
                               'Meet!',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

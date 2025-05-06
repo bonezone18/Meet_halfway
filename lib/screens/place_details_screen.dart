@@ -65,6 +65,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final placeProvider = Provider.of<PlaceProvider>(context);
     final directionsProvider = Provider.of<DirectionsProvider>(context);
 
@@ -75,7 +76,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.place.name),
-        backgroundColor: const Color(0xFF4285F4),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -87,15 +89,15 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(widget.place),
+                  _buildHeader(widget.place, theme),
                   const SizedBox(height: 8),
                   _buildAddress(widget.place),
                   const SizedBox(height: 16),
                   _buildDistanceCard(widget.place, directionsProvider),
                   const SizedBox(height: 16),
-                  _buildDetailsCard(widget.place),
+                  _buildDetailsCard(widget.place, theme),
                   const SizedBox(height: 24),
-                  _buildAnimatedButtons(context),
+                  _buildAnimatedButtons(context, theme),
                 ],
               ),
             ),
@@ -126,7 +128,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
     );
   }
 
-  Widget _buildHeader(Place place) {
+  Widget _buildHeader(Place place, ThemeData theme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -140,7 +142,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.green,
+              color: const Color(0xFFF39C12), // Topaz-like
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -198,7 +200,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
     );
   }
 
-  Widget _buildDetailsCard(Place place) {
+  Widget _buildDetailsCard(Place place, ThemeData theme) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -208,17 +210,17 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
             const Text('Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 8),
             if (place.priceLevel != null)
-              _iconTextRow(Icons.attach_money, 'Price level: ${place.priceLevel}', Colors.green),
+              _iconTextRow(Icons.attach_money, 'Price level: ${place.priceLevel}', const Color(0xFF2ECC71)),
             const SizedBox(height: 8),
             _iconTextRow(
               place.isOpen ? Icons.check_circle : Icons.access_time,
               place.isOpen ? 'Open now' : 'Hours not available',
-              place.isOpen ? Colors.green : Colors.orange,
+              place.isOpen ? const Color(0xFF2ECC71) : const Color(0xFFF39C12),
             ),
             const SizedBox(height: 8),
-            _iconTextRow(Icons.category, 'Categories: ${_formatCategories(place.types)}', Colors.purple),
+            _iconTextRow(Icons.category, 'Categories: ${_formatCategories(place.types)}', const Color(0xFF9B59B6)),
             if (place.userRatingsTotal != null)
-              _iconTextRow(Icons.people, 'Based on ${place.userRatingsTotal} reviews', Colors.blue),
+              _iconTextRow(Icons.people, 'Based on ${place.userRatingsTotal} reviews', const Color(0xFF2980B9)),
           ],
         ),
       ),
@@ -235,7 +237,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
     );
   }
 
-  Widget _buildAnimatedButtons(BuildContext context) {
+  Widget _buildAnimatedButtons(BuildContext context, ThemeData theme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -256,7 +258,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
               icon: const Icon(Icons.directions),
               label: const Text('Directions'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4285F4),
+                backgroundColor: const Color(0xFF2980B9), // Sapphire
                 padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 4,
@@ -280,7 +282,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> with SingleTick
               icon: const Icon(Icons.share),
               label: const Text('Share'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF34A853),
+                backgroundColor: const Color(0xFF9B59B6), // Amethyst
                 padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 4,

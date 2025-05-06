@@ -23,7 +23,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   bool _isExpanded = true;
   late AnimationController _controller;
   late Animation<double> _animation;
-
   GoogleMapController? _mapController;
   String _lastCoordsKey = '';
 
@@ -47,7 +46,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.forward();
 
-    // Kick off the first place search after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final midProv = Provider.of<MidpointProvider>(context, listen: false);
       final locProv = Provider.of<LocationProvider>(context, listen: false);
@@ -82,8 +80,8 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     final midpoint      = midProv.midpoint;
     final locationA     = locProv.locationA;
     final locationB     = locProv.locationB;
+    final theme         = Theme.of(context);
 
-    // After every build, if the three coords have changed, animate the map
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_mapController != null && midpoint != null && locationA != null && locationB != null) {
         final key = '${locationA.latitude},${locationA.longitude}|'
@@ -92,7 +90,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         if (key != _lastCoordsKey) {
           _lastCoordsKey = key;
 
-          // Compute bounds
           final lats = [locationA.latitude, locationB.latitude, midpoint.latitude];
           final lngs = [locationA.longitude,locationB.longitude,midpoint.longitude];
           final bounds = LatLngBounds(
@@ -100,8 +97,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
             northeast: LatLng(lats.reduce(math.max), lngs.reduce(math.max)),
           );
 
-          _mapController!
-            .animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
+          _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
         }
       }
     });
@@ -109,6 +105,8 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meeting Point Results'),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -128,7 +126,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Collapse / expand
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -145,7 +142,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                     ],
                   ),
 
-                  // Map & summary
                   SizeTransition(
                     sizeFactor: _animation,
                     axisAlignment: -1.0,
@@ -158,8 +154,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                             transitionBuilder: (child, anim) =>
                               SlideTransition(
                                 position: Tween<Offset>(
-                                  begin: const Offset(0, 0.1),
-                                   end: Offset.zero,
+                                  begin: const Offset(0, 0.1), end: Offset.zero,
                                 ).animate(anim),
                                 child: FadeTransition(opacity: anim, child: child),
                               ),
@@ -169,11 +164,9 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                     ),
                   ),
 
-                  // Filters & sort
-                  _buildFilterChips(placeProv),
+                  _buildFilterChips(placeProv, theme),
                   _buildSortDropdown(placeProv),
 
-                  // Results list
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -216,9 +209,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                                     children: [
                                       Text(
                                         place.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold, fontSize: 16
-                                        ),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
@@ -233,15 +224,14 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                                             const SizedBox(width: 4),
                                             Flexible(
                                               child: Text(
-                                                '${place.rating!.toStringAsFixed(1)} '
-                                                '(${place.userRatingsTotal ?? 0})',
+                                                '${place.rating!.toStringAsFixed(1)} (${place.userRatingsTotal ?? 0})',
                                                 style: const TextStyle(fontSize: 14),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                             const SizedBox(width: 16),
                                           ],
-                                          Icon(Icons.location_on, size: 16, color: Colors.blue[700]),
+                                          Icon(Icons.location_on, size: 16, color: theme.colorScheme.primary),
                                           const SizedBox(width: 4),
                                           Flexible(
                                             child: Text(
@@ -276,16 +266,10 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
       infoWindow: const InfoWindow(title: 'Drag to adjust midpoint'),
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
       onDragEnd: (newPos) {
-        final newMid = Location(
-          latitude: newPos.latitude,
-          longitude: newPos.longitude,
-          name: 'Custom Midpoint',
-        );
+        final newMid = Location(latitude: newPos.latitude, longitude: newPos.longitude, name: 'Custom Midpoint');
         Provider.of<MidpointProvider>(context, listen: false).setMidpoint(newMid);
-        final a = locationA, b = locationB;
-        if (a != null && b != null) {
-          Provider.of<PlaceProvider>(context, listen: false)
-            .searchPlaces(newMid, a, b);
+        if (locationA != null && locationB != null) {
+          Provider.of<PlaceProvider>(context, listen: false).searchPlaces(newMid, locationA, locationB);
         }
       },
     );
@@ -311,7 +295,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     return SizedBox(
       height: 200,
       child: GoogleMap(
-        // no dynamic key here, so map instance persists
         initialCameraPosition: CameraPosition(
           target: LatLng(midpoint.latitude, midpoint.longitude),
           zoom: 10,
@@ -319,15 +302,12 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         markers: markers,
         zoomControlsEnabled: true,
         myLocationButtonEnabled: false,
-        onMapCreated: (controller) {
-          _mapController = controller;
-          // we’ll animate bounds in the post-frame callback in build()
-        },
+        onMapCreated: (controller) => _mapController = controller,
       ),
     );
   }
 
-  Widget _buildFilterChips(PlaceProvider provider) {
+  Widget _buildFilterChips(PlaceProvider provider, ThemeData theme) {
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 8),
