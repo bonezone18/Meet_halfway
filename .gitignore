@@ -11,6 +11,7 @@ coverage/
 # Contains the Google API key
 .env
 android/key.properties
+key.properties
 
 
 # IDEs

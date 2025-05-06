@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';           // for SystemSound & HapticFeedback
 import 'package:provider/provider.dart';
+
 import '../services/location_service.dart';
 import '../providers/location_provider.dart';
 import '../providers/midpoint_provider.dart';
+import '../providers/place_provider.dart';
 import '../screens/results_screen.dart';
 import '../widgets/location_input_widget.dart';
 
 /// The main screen of the application where users input locations.
-///
-/// This screen allows users to:
-/// - Input their own location
-/// - Input their friend's location
-/// - Calculate the midpoint between these locations
-/// - Navigate to the results screen to see meeting point suggestions
 class HomeScreen extends StatelessWidget {
   /// Service for location-related operations
   final LocationService locationService;
@@ -36,6 +33,7 @@ class HomeScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // YOUR LOCATION
                       LocationInputWidget(
                         isLocationA: true,
                         placeholder: 'Your location',
@@ -43,17 +41,25 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
 
+                      // CIRCULAR "Meet!" BUTTON
                       Center(
-                        child: ElevatedButton(
+                        child: RawMaterialButton(
                           onPressed: () async {
-                            final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-                            final midpointProvider = Provider.of<MidpointProvider>(context, listen: false);
+                            // click sound + light haptic
+                            SystemSound.play(SystemSoundType.click);
+                            HapticFeedback.lightImpact();
 
-                            final locA = locationProvider.locationA;
-                            final locB = locationProvider.locationB;
+                            final locProv     = context.read<LocationProvider>();
+                            final midProv     = context.read<MidpointProvider>();
+                            final placeProv   = context.read<PlaceProvider>();
+                            final locA        = locProv.locationA;
+                            final locB        = locProv.locationB;
 
                             if (locA != null && locB != null) {
-                              await midpointProvider.calculateMidpoint(locA, locB);
+                              // reset filters so every search is fresh
+                              placeProv.resetCategoryFilters();
+
+                              await midProv.calculateMidpoint(locA, locB);
                               if (context.mounted) {
                                 Navigator.push(
                                   context,
@@ -66,25 +72,34 @@ class HomeScreen extends StatelessWidget {
                               );
                             }
                           },
-                          style: ElevatedButton.styleFrom(
-                            shape: const CircleBorder(),
-                            padding: const EdgeInsets.all(60),
-                            backgroundColor: Theme.of(context).primaryColor,
-                            elevation: 8,
+                          elevation: 8,
+                          fillColor: Theme.of(context).primaryColor,
+                          shape: const CircleBorder(),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 120,
+                            height: 120,
                           ),
-                          child: const Icon(Icons.location_searching, size: 48, color: Colors.white),
+                          child: const Text(
+                            'Meet!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
 
                       const SizedBox(height: 32),
 
+                      // FRIEND'S LOCATION
                       LocationInputWidget(
                         isLocationA: false,
                         placeholder: "Friend's location",
                         locationService: locationService,
                       ),
 
-                      const SizedBox(height: 40), // additional padding for autocomplete
+                      const SizedBox(height: 40), // extra bottom padding
                     ],
                   ),
                 ),

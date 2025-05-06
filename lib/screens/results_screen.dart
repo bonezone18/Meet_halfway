@@ -1,4 +1,5 @@
-// results_screen.dart
+// lib/screens/results_screen.dart
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,8 +8,8 @@ import '../models/place_model.dart';
 import '../models/location_model.dart';
 import '../providers/place_provider.dart';
 import '../providers/midpoint_provider.dart';
-import 'place_details_screen.dart';
 import '../providers/location_provider.dart';
+import 'place_details_screen.dart';
 import '../utils/navigation_transitions.dart';
 
 class ResultsScreen extends StatefulWidget {
@@ -18,23 +19,12 @@ class ResultsScreen extends StatefulWidget {
   State<ResultsScreen> createState() => _ResultsScreenState();
 }
 
-class _ResultsScreenState extends State<ResultsScreen> {
-  PageRouteBuilder _buildFadeRoute(Widget page) {
-    return PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 400),
-      reverseTransitionDuration: const Duration(milliseconds: 400),
-      pageBuilder: (_, animation, __) => FadeTransition(
-        opacity: animation,
-        child: page,
-      ),
-      transitionsBuilder: (_, animation, __, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
-    );
-  }
+class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProviderStateMixin {
+  bool _isExpanded = true;
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  GoogleMapController? _mapController;
 
   final Map<String, String> _categoryLabels = {
     'restaurant': 'Restaurants',
@@ -52,25 +42,51 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final midpointProvider = Provider.of<MidpointProvider>(context, listen: false);
-      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-      final midpoint = midpointProvider.midpoint;
-      final locA = locationProvider.locationA;
-      final locB = locationProvider.locationB;
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _controller.forward();
 
-      if (midpoint != null && locA != null && locB != null) {
-        Provider.of<PlaceProvider>(context, listen: false).searchPlaces(midpoint, locA, locB);
+    // Run initial search once the providers are ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final midpointProv = Provider.of<MidpointProvider>(context, listen: false);
+      final locProv = Provider.of<LocationProvider>(context, listen: false);
+      final midpoint = midpointProv.midpoint;
+      final locationA = locProv.locationA;
+      final locationB = locProv.locationB;
+      if (midpoint != null && locationA != null && locationB != null) {
+        Provider.of<PlaceProvider>(context, listen: false)
+          .searchPlaces(midpoint, locationA, locationB);
       }
     });
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  PageRouteBuilder _buildFadeRoute(Widget page) {
+    return PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 400),
+      reverseTransitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (_, animation, __) => FadeTransition(
+        opacity: animation,
+        child: page,
+      ),
+      transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final midpointProvider = Provider.of<MidpointProvider>(context);
-    final placeProvider = Provider.of<PlaceProvider>(context);
-    final locationProvider = Provider.of<LocationProvider>(context);
-    final midpoint = midpointProvider.midpoint;
+    final midpointProvider  = Provider.of<MidpointProvider>(context);
+    final placeProvider     = Provider.of<PlaceProvider>(context);
+    final locationProvider  = Provider.of<LocationProvider>(context);
+    final midpoint          = midpointProvider.midpoint;
+    final locationA         = locationProvider.locationA;
+    final locationB         = locationProvider.locationB;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,104 +95,236 @@ class _ResultsScreenState extends State<ResultsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              final locA = locationProvider.locationA;
-              final locB = locationProvider.locationB;
-
-              if (midpoint != null && locA != null && locB != null) {
-                placeProvider.searchPlaces(midpoint, locA, locB);
+              if (midpoint != null && locationA != null && locationB != null) {
+                placeProvider.searchPlaces(midpoint, locationA, locationB);
               }
             },
           ),
         ],
       ),
       body: placeProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : placeProvider.hasError
-              ? _buildErrorWidget(placeProvider.errorMessage)
-              : placeProvider.filteredPlaces.isEmpty
-                  ? const Center(child: Text('No places found.'))
-                  : Column(
+        ? const Center(child: CircularProgressIndicator())
+        : placeProvider.filteredPlaces.isEmpty
+          ? const Center(child: Text('No places found.'))
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Collapse / expand button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _isExpanded = !_isExpanded;
+                            _isExpanded ? _controller.forward() : _controller.reverse();
+                          });
+                        },
+                        icon: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
+                        label: Text(_isExpanded ? 'Hide Map & Summary' : 'Show Map & Summary'),
+                      ),
+                    ],
+                  ),
+
+                  // Collapsible map & summary
+                  SizeTransition(
+                    sizeFactor: _animation,
+                    axisAlignment: -1.0,
+                    child: Column(
                       children: [
                         if (midpoint != null)
-                          _buildInteractiveMap(midpoint, locationProvider, midpointProvider, placeProvider),
+                          _buildMap(midpoint, locationA, locationB),
                         if (midpoint != null)
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 400),
-                            transitionBuilder: (child, animation) => SlideTransition(
-                              position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation),
-                              child: FadeTransition(opacity: animation, child: child),
+                            transitionBuilder: (child, anim) => SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.1),
+                                end: Offset.zero,
+                              ).animate(anim),
+                              child: FadeTransition(opacity: anim, child: child),
                             ),
                             child: midpointProvider.buildTripSummaryCard(),
                           ),
-                        _buildFilterChips(placeProvider),
-                        _buildSortDropdown(placeProvider),
-                        Expanded(child: _buildPlacesList(placeProvider)),
                       ],
                     ),
+                  ),
+
+                  // Filters & sorting
+                  _buildFilterChips(placeProvider),
+                  _buildSortDropdown(placeProvider),
+
+                  // Places list
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: placeProvider.filteredPlaces.length,
+                    itemBuilder: (context, index) {
+                      final place = placeProvider.filteredPlaces[index];
+                      final photoUrl = place.photoReference != null
+                        ? placeProvider.getPhotoUrl(place, maxWidth: 200)
+                        : null;
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 3,
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).push(
+                            _buildFadeRoute(PlaceDetailsScreen(place: place)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  child: SizedBox(
+                                    width: 80,
+                                    height: 80,
+                                    child: photoUrl != null
+                                      ? Image.network(photoUrl, fit: BoxFit.cover)
+                                      : Container(
+                                          color: Colors.grey[300],
+                                          child: const Icon(Icons.image_not_supported),
+                                        ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        place.name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        place.vicinity ?? place.address ?? 'No address',
+                                        style: TextStyle(color: Colors.grey[700]),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          if (place.rating != null) ...[
+                                            Icon(Icons.star, size: 16, color: Colors.amber[700]),
+                                            const SizedBox(width: 4),
+                                            Flexible(
+                                              child: Text(
+                                                '${place.rating!.toStringAsFixed(1)} (${place.userRatingsTotal ?? 0})',
+                                                style: const TextStyle(fontSize: 14),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                          ],
+                                          Icon(Icons.location_on, size: 16, color: Colors.blue[700]),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              '${place.distanceFromMidpoint.toStringAsFixed(1)} km',
+                                              style: const TextStyle(fontSize: 14),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _buildErrorWidget(String errorMessage) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.redAccent, size: 60),
-            const SizedBox(height: 20),
-            Text(
-              'Oops! Something went wrong.',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              errorMessage,
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+  Widget _buildMap(Location midpoint, Location? locationA, Location? locationB) {
+    // midpoint marker
+    final midpointMarker = Marker(
+      markerId: const MarkerId('midpoint'),
+      position: LatLng(midpoint.latitude, midpoint.longitude),
+      draggable: true,
+      infoWindow: const InfoWindow(title: 'Drag to adjust midpoint'),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      onDragEnd: (newPos) {
+        final newMid = Location(
+          latitude: newPos.latitude,
+          longitude: newPos.longitude,
+          name: 'Custom Midpoint',
+        );
+        Provider.of<MidpointProvider>(context, listen: false).setMidpoint(newMid);
+        final locA = locationA, locB = locationB;
+        if (locA != null && locB != null) {
+          Provider.of<PlaceProvider>(context, listen: false)
+            .searchPlaces(newMid, locA, locB);
+        }
+      },
     );
-  }
 
-  Widget _buildInteractiveMap(Location midpoint, LocationProvider locationProvider, MidpointProvider midpointProvider, PlaceProvider placeProvider) {
-    return SizedBox(
-      height: 300,
+    final markers = <Marker>{ midpointMarker };
+    if (locationA != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('locationA'),
+        position: LatLng(locationA.latitude, locationA.longitude),
+        infoWindow: const InfoWindow(title: 'You'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      ));
+    }
+    if (locationB != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('locationB'),
+        position: LatLng(locationB.latitude, locationB.longitude),
+        infoWindow: const InfoWindow(title: 'Friend'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      ));
+    }
+
+   /// return SizedBox(
+    ///  height: 200,
+    ///  child: GoogleMap(
+    ///    key: const ValueKey('results_map'),
+  /// Build a dynamic key so the map fully rebuilds whenever the coords change
+    final mapKey = ValueKey(
+      'map_${locationA?.latitude}_${locationA?.longitude}_'
+      '${locationB?.latitude}_${locationB?.longitude}_'
+      '${midpoint.latitude}_${midpoint.longitude}',
+   );
+   return SizedBox(
+      height: 200,
       child: GoogleMap(
+        key: mapKey,
         initialCameraPosition: CameraPosition(
           target: LatLng(midpoint.latitude, midpoint.longitude),
-          zoom: 14,
+          zoom: 12, // zoomed out to show both points
         ),
-        markers: {
-          Marker(
-            markerId: const MarkerId('midpoint'),
-            position: LatLng(midpoint.latitude, midpoint.longitude),
-            draggable: true,
-            infoWindow: const InfoWindow(title: 'Drag to adjust midpoint'),
-            onDragEnd: (LatLng newPosition) async {
-              final newMidpoint = Location(
-                latitude: newPosition.latitude,
-                longitude: newPosition.longitude,
-                name: 'Adjusted Midpoint',
-              );
-              midpointProvider.setMidpoint(newMidpoint);
-
-              final locA = locationProvider.locationA;
-              final locB = locationProvider.locationB;
-
-              if (locA != null && locB != null) {
-                await placeProvider.searchPlaces(newMidpoint, locA, locB);
-              }
-            },
-          ),
-        },
-        zoomGesturesEnabled: true,
-        scrollGesturesEnabled: true,
-        myLocationButtonEnabled: false,
+        markers: markers,
         zoomControlsEnabled: true,
+        myLocationButtonEnabled: false,
+        onMapCreated: (controller) {
+          // dispose previous controller if any
+          _mapController?.dispose();
+          _mapController = controller;
+
+          // auto-fit all markers in view
+          if (locationA != null && locationB != null) {
+            final lats = [locationA.latitude, locationB.latitude, midpoint.latitude];
+            final lngs = [locationA.longitude, locationB.longitude, midpoint.longitude];
+            final bounds = LatLngBounds(
+              southwest: LatLng(lats.reduce(math.min), lngs.reduce(math.min)),
+              northeast: LatLng(lats.reduce(math.max), lngs.reduce(math.max)),
+            );
+            controller.moveCamera(CameraUpdate.newLatLngBounds(bounds, 50));
+          }
+        },
       ),
     );
   }
@@ -196,16 +344,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
               onSelected: (_) => provider.clearCategoryFilters(),
             ),
           ),
-          ...provider.places.expand((place) => place.types).toSet().where((type) => _categoryLabels.containsKey(type)).map(
-                (type) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: FilterChip(
-                    label: Text(_categoryLabels[type] ?? type),
-                    selected: provider.selectedCategories.contains(type),
-                    onSelected: (_) => provider.toggleCategory(type),
-                  ),
-                ),
-              )
+          ...provider.places
+              .expand((p) => p.types)
+              .toSet()
+              .where((type) => _categoryLabels.containsKey(type))
+              .map((type) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: FilterChip(
+                      label: Text(_categoryLabels[type]!),
+                      selected: provider.selectedCategories.contains(type),
+                      onSelected: (_) => provider.toggleCategory(type),
+                    ),
+                  )),
         ],
       ),
     );
@@ -225,83 +375,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
           DropdownMenuItem(value: SortOption.priceDesc, child: Text('Price (High to Low)')),
         ],
       ),
-    );
-  }
-
-  Widget _buildPlacesList(PlaceProvider provider) {
-    return ListView.builder(
-      itemCount: provider.filteredPlaces.length,
-      itemBuilder: (context, index) {
-        final place = provider.filteredPlaces[index];
-        final photoUrl = place.photoReference != null
-            ? provider.getPhotoUrl(place, maxWidth: 200)
-            : null;
-
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 3,
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-              _buildFadeRoute(PlaceDetailsScreen(place: place)),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8.0),
-                    child: SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: photoUrl != null
-                          ? Image.network(
-                              photoUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.image_not_supported),
-                              ),
-                            )
-                          : Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.image_not_supported),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(place.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 4),
-                        Text(place.vicinity ?? place.address ?? 'No address', style: TextStyle(color: Colors.grey[700])),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            if (place.rating != null) ...[
-                              Icon(Icons.star, size: 16, color: Colors.amber[700]),
-                              const SizedBox(width: 4),
-                              Text('${place.rating!.toStringAsFixed(1)} (${place.userRatingsTotal ?? 0})', style: const TextStyle(fontSize: 14)),
-                              const SizedBox(width: 16),
-                            ],
-                            Icon(Icons.location_on, size: 16, color: Colors.blue[700]),
-                            const SizedBox(width: 4),
-                            Text('${place.distanceFromMidpoint.toStringAsFixed(1)} km', style: const TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

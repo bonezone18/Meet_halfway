@@ -20,7 +20,7 @@ class PlaceService {
   /// 
   /// @param midpoint The central location to search around
   /// @param radius The search radius in meters (defaults to 1500)
-  /// @param type Optional place type filter (e.g., "restaurant", "cafe")
+  /// @param type Optional place type filter (e.g., 'restaurant', 'cafe')
   /// @param keyword Optional keyword to filter results
   /// @param maxResults Maximum number of results to return (defaults to 10)
   /// @return A list of Place objects sorted by distance from the midpoint
@@ -47,7 +47,7 @@ class PlaceService {
     
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-    print('API response body: ${response.body}');
+      print('API response body: ${response.body}');
       
       if (data['status'] == 'OK') {
         final results = data['results'] as List;
@@ -90,35 +90,37 @@ class PlaceService {
   /// @param input The user's search text
   /// @return A list of maps containing place descriptions and IDs
   Future<List<Map<String, dynamic>>> getPlaceSuggestions(String input) async {
-  if (input.trim().isEmpty) return [];
-  final url = Uri.parse(
-    "https://maps.googleapis.com/maps/api/place/autocomplete/json"
-    "?input=$input&key=${dotenv.env["GOOGLE_MAPS_API_KEY"]}"
-  );
+    if (input.trim().isEmpty) return [];
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+      '?input=$input&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}'
+    );
 
-  final response = await http.get(url);
+    final response = await http.get(url);
     print('GET URL: $url');
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    print('API response body: ${response.body}');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('API response body: ${response.body}');
 
-    if (data['status'] == 'OK') {
-      return (data['predictions'] as List)
-          .map((item) => {
-                'description': item['description'],
-                'place_id': item['place_id'],
-              })
-          .toList();
+      final status = data['status'] as String;
+      if (status == 'OK') {
+        return (data['predictions'] as List)
+            .map((item) => {
+                  'description': item['description'],
+                  'place_id': item['place_id'],
+                })
+            .toList();
+      } else if (status == 'ZERO_RESULTS') {
+        return [];
+      } else {
+        throw Exception('Failed to get place suggestions: $status');
+      }
     } else {
-      throw Exception("Failed to get place suggestions: ${data['status']}");
+      throw Exception('Failed to fetch place suggestions from API');
     }
-  } else {
-    throw Exception("Failed to fetch place suggestions from API");
   }
-}
 
-  
   /// Retrieves detailed information for a specific place using its place ID.
   /// 
   /// This method queries the Google Places API Details endpoint to get comprehensive
@@ -162,7 +164,8 @@ class PlaceService {
     return 'https://maps.googleapis.com/maps/api/place/photo'
       '?maxwidth=$maxWidth'
       '&photo_reference=$photoReference'
-      '&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}';
+      '&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}'
+    ;
   }
   
   /// Calculates the distance between two locations using the Haversine formula.
@@ -189,7 +192,7 @@ class PlaceService {
     final a = _square(Math.sin(dLat / 2)) + 
               Math.cos(lat1) * Math.cos(lat2) * 
               _square(Math.sin(dLon / 2));
-              
+               
     final c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     final distance = earthRadius * c;
     
