@@ -1,3 +1,4 @@
+// lib/widgets/location_input_widget.dart
 import 'dart:async'; // Import Timer
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
@@ -8,10 +9,6 @@ import '../providers/place_provider.dart';
 import '../models/location_model.dart'; // Import Location model
 
 /// A widget for inputting a location, with autocomplete suggestions and a 'use current location' button.
-///
-/// This widget integrates with [LocationProvider] and [PlaceProvider] to manage state
-/// and fetch suggestions. It uses [flutter_typeahead] for the autocomplete functionality.
-/// Includes debouncing for suggestion fetching to optimize API calls.
 class LocationInputWidget extends StatefulWidget {
   final bool isLocationA;
   final String placeholder;
@@ -50,13 +47,14 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
         return;
       }
       try {
-        final suggestions = await Provider.of<PlaceProvider>(context, listen: false).getPlaceSuggestions(pattern);
-        if (!completer.isCompleted) {
-          completer.complete(suggestions);
-        }
+        final suggestions = await Provider.of<PlaceProvider>(context, listen: false)
+            .getPlaceSuggestions(pattern);
+        if (!completer.isCompleted) completer.complete(suggestions);
       } catch (e) {
         if (!completer.isCompleted) {
-          completer.complete([{'description': 'Error fetching suggestions', 'place_id': ''}]);
+          completer.complete([
+            {'description': 'Error fetching suggestions', 'place_id': ''}
+          ]);
         }
       }
     });
@@ -67,44 +65,52 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
-
     final currentLocation = widget.isLocationA
         ? locationProvider.locationA
         : locationProvider.locationB;
 
+    // Sync text with provider.address
     if (currentLocation != null) {
-      final expectedText = currentLocation.address ?? (currentLocation.isCurrentLocation ? 'Current Location (${currentLocation.latitude.toStringAsFixed(4)}, ${currentLocation.longitude.toStringAsFixed(4)})' : '');
-      if (_controller.text != expectedText) {
+      final expected = currentLocation.address ??
+          (currentLocation.isCurrentLocation
+              ? 'Current Location'
+              : '');
+      if (_controller.text != expected) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _controller.text = expectedText;
-            _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
-          }
+          if (!mounted) return;
+          _controller.text = expected;
+          _controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: _controller.text.length),
+          );
         });
       }
-    } else {
-      if (_controller.text.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _controller.clear();
-          }
-        });
-      }
+    } else if (_controller.text.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _controller.clear();
+      });
     }
 
+    // Calculate keyboard height
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             widget.isLocationA ? 'Your Location' : 'Friend\'s Location',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Card(
             elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Row(
               children: [
                 Expanded(
@@ -115,9 +121,12 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
                       decoration: InputDecoration(
                         hintText: widget.placeholder,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 0),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 16.0),
                         prefixIcon: Icon(
-                          widget.isLocationA ? Icons.location_on : Icons.person_pin_circle,
+                          widget.isLocationA
+                              ? Icons.location_on
+                              : Icons.person_pin_circle,
                           color: widget.isLocationA
                               ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.secondary,
@@ -126,102 +135,84 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
                       onSubmitted: (value) async {
                         final trimmed = value.trim();
                         if (trimmed.isEmpty) return;
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Geocoding address...'), duration: Duration(seconds: 1)),
-                        );
-
                         try {
-                          final location = await widget.locationService.geocodeAddress(trimmed);
+                          final loc = await widget.locationService
+                              .geocodeAddress(trimmed);
                           if (widget.isLocationA) {
-                            locationProvider.setLocationA(location);
+                            locationProvider.setLocationA(loc);
                           } else {
-                            locationProvider.setLocationB(location);
+                            locationProvider.setLocationB(loc);
                           }
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error geocoding address: ${e.toString()}')),
+                            SnackBar(
+                                content: Text(
+                                    'Error geocoding address: $e')),
                           );
-                        }
-                      },
-                      onChanged: (value) {
-                        if (value.isEmpty) {
-                          if (widget.isLocationA) {
-                            if (locationProvider.locationA != null) {
-                              locationProvider.setLocationA(Location(latitude: 0, longitude: 0));
-                            }
-                          } else {
-                            if (locationProvider.locationB != null) {
-                              locationProvider.setLocationB(Location(latitude: 0, longitude: 0));
-                            }
-                          }
                         }
                       },
                     ),
                     suggestionsCallback: _getDebouncedSuggestions,
                     itemBuilder: (context, suggestion) {
-                      if (suggestion['place_id'] == '') {
-                        return ListTile(
-                          title: Text(suggestion['description'], style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                          dense: true,
-                        );
-                      }
+                      final desc = suggestion['description'] as String? ?? '';
                       return ListTile(
-                        title: Text(suggestion['description'] ?? 'Unknown suggestion'),
+                        title: Text(desc),
                         dense: true,
                       );
                     },
-                    onSuggestionSelected: (suggestion) async {
-                      if (suggestion['place_id'] == '') return;
-
-                      _controller.text = suggestion['description'] ?? '';
-                      final placeId = suggestion['place_id'];
+                    onSuggestionSelected: (s) async {
+                      final placeId = s['place_id'] as String?;
                       if (placeId == null || placeId.isEmpty) return;
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Fetching location details...'), duration: Duration(seconds: 1)),
-                      );
-
+                      _controller.text = s['description'] as String? ?? '';
                       try {
-                        final location = await widget.locationService.getPlaceDetails(placeId);
+                        final loc = await widget.locationService
+                            .getPlaceDetails(placeId);
                         if (widget.isLocationA) {
-                          locationProvider.setLocationA(location);
+                          locationProvider.setLocationA(loc);
                         } else {
-                          locationProvider.setLocationB(location);
+                          locationProvider.setLocationB(loc);
                         }
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error fetching details: ${e.toString()}')),
+                          SnackBar(
+                              content:
+                                  Text('Error fetching details: $e')),
                         );
                       }
                     },
+                    suggestionsBoxVerticalOffset:
+                        keyboardHeight > 0 ? -keyboardHeight : 12.0,
                     suggestionsBoxDecoration: SuggestionsBoxDecoration(
                       elevation: 4.0,
                       borderRadius: BorderRadius.circular(8.0),
                       constraints: const BoxConstraints(maxHeight: 250),
                     ),
                     hideOnLoading: false,
-                    loadingBuilder: (context) => const Center(child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(strokeWidth: 2.0),
-                    )),
+                    loadingBuilder: (context) => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(strokeWidth: 2.0),
+                      ),
+                    ),
                     noItemsFoundBuilder: (context) => const Padding(
                       padding: EdgeInsets.all(12.0),
-                      child: Text('No suggestions found.', textAlign: TextAlign.center),
+                      child: Text('No suggestions found.',
+                          textAlign: TextAlign.center),
                     ),
                     errorBuilder: (context, error) => Padding(
                       padding: const EdgeInsets.all(12.0),
-                      child: Text('Error: $error', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      child: Text('Error: $error',
+                          style: TextStyle(
+                              color:
+                                  Theme.of(context).colorScheme.error)),
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.my_location, color: Theme.of(context).colorScheme.primary),
+                  icon: Icon(Icons.my_location,
+                      color: Theme.of(context).colorScheme.primary),
                   tooltip: 'Use Current Location',
                   onPressed: () async {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Getting current location...'), duration: Duration(seconds: 1)),
-                    );
                     if (widget.isLocationA) {
                       await locationProvider.useCurrentLocationForA();
                     } else {
@@ -229,7 +220,9 @@ class _LocationInputWidgetState extends State<LocationInputWidget> {
                     }
                     if (locationProvider.hasError) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: ${locationProvider.errorMessage}')),
+                        SnackBar(
+                            content: Text(
+                                'Error: ${locationProvider.errorMessage}')),
                       );
                     }
                   },

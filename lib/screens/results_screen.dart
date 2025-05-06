@@ -25,18 +25,19 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   late Animation<double> _animation;
 
   GoogleMapController? _mapController;
+  String _lastCoordsKey = '';
 
   final Map<String, String> _categoryLabels = {
-    'restaurant': 'Restaurants',
-    'cafe': 'Cafes',
-    'bar': 'Bars',
-    'park': 'Parks',
-    'shopping_mall': 'Shopping',
-    'movie_theater': 'Movies',
-    'museum': 'Museums',
-    'library': 'Libraries',
-    'art_gallery': 'Art Galleries',
-    'tourist_attraction': 'Attractions',
+    'restaurant':       'Restaurants',
+    'cafe':             'Cafes',
+    'bar':              'Bars',
+    'park':             'Parks',
+    'shopping_mall':    'Shopping',
+    'movie_theater':    'Movies',
+    'museum':           'Museums',
+    'library':          'Libraries',
+    'art_gallery':      'Art Galleries',
+    'tourist_attraction':'Attractions',
   };
 
   @override
@@ -46,16 +47,15 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.forward();
 
-    // Run initial search once the providers are ready
+    // Kick off the first place search after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final midpointProv = Provider.of<MidpointProvider>(context, listen: false);
+      final midProv = Provider.of<MidpointProvider>(context, listen: false);
       final locProv = Provider.of<LocationProvider>(context, listen: false);
-      final midpoint = midpointProv.midpoint;
-      final locationA = locProv.locationA;
-      final locationB = locProv.locationB;
-      if (midpoint != null && locationA != null && locationB != null) {
-        Provider.of<PlaceProvider>(context, listen: false)
-          .searchPlaces(midpoint, locationA, locationB);
+      final mp = midProv.midpoint;
+      final a  = locProv.locationA;
+      final b  = locProv.locationB;
+      if (mp != null && a != null && b != null) {
+        Provider.of<PlaceProvider>(context, listen: false).searchPlaces(mp, a, b);
       }
     });
   }
@@ -67,26 +67,44 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     super.dispose();
   }
 
-  PageRouteBuilder _buildFadeRoute(Widget page) {
-    return PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 400),
-      reverseTransitionDuration: const Duration(milliseconds: 400),
-      pageBuilder: (_, animation, __) => FadeTransition(
-        opacity: animation,
-        child: page,
-      ),
-      transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
-    );
-  }
+  PageRouteBuilder _buildFadeRoute(Widget page) => PageRouteBuilder(
+    transitionDuration: const Duration(milliseconds: 400),
+    reverseTransitionDuration: const Duration(milliseconds: 400),
+    pageBuilder: (_, anim, __) => FadeTransition(opacity: anim, child: page),
+    transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
+  );
 
   @override
   Widget build(BuildContext context) {
-    final midpointProvider  = Provider.of<MidpointProvider>(context);
-    final placeProvider     = Provider.of<PlaceProvider>(context);
-    final locationProvider  = Provider.of<LocationProvider>(context);
-    final midpoint          = midpointProvider.midpoint;
-    final locationA         = locationProvider.locationA;
-    final locationB         = locationProvider.locationB;
+    final midProv       = Provider.of<MidpointProvider>(context);
+    final placeProv     = Provider.of<PlaceProvider>(context);
+    final locProv       = Provider.of<LocationProvider>(context);
+    final midpoint      = midProv.midpoint;
+    final locationA     = locProv.locationA;
+    final locationB     = locProv.locationB;
+
+    // After every build, if the three coords have changed, animate the map
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_mapController != null && midpoint != null && locationA != null && locationB != null) {
+        final key = '${locationA.latitude},${locationA.longitude}|'
+                    '${locationB.latitude},${locationB.longitude}|'
+                    '${midpoint.latitude},${midpoint.longitude}';
+        if (key != _lastCoordsKey) {
+          _lastCoordsKey = key;
+
+          // Compute bounds
+          final lats = [locationA.latitude, locationB.latitude, midpoint.latitude];
+          final lngs = [locationA.longitude,locationB.longitude,midpoint.longitude];
+          final bounds = LatLngBounds(
+            southwest: LatLng(lats.reduce(math.min), lngs.reduce(math.min)),
+            northeast: LatLng(lats.reduce(math.max), lngs.reduce(math.max)),
+          );
+
+          _mapController!
+            .animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
+        }
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -96,21 +114,21 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
             icon: const Icon(Icons.refresh),
             onPressed: () {
               if (midpoint != null && locationA != null && locationB != null) {
-                placeProvider.searchPlaces(midpoint, locationA, locationB);
+                placeProv.searchPlaces(midpoint, locationA, locationB);
               }
             },
           ),
         ],
       ),
-      body: placeProvider.isLoading
+      body: placeProv.isLoading
         ? const Center(child: CircularProgressIndicator())
-        : placeProvider.filteredPlaces.isEmpty
+        : placeProv.filteredPlaces.isEmpty
           ? const Center(child: Text('No places found.'))
           : SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Collapse / expand button
+                  // Collapse / expand
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -127,43 +145,43 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                     ],
                   ),
 
-                  // Collapsible map & summary
+                  // Map & summary
                   SizeTransition(
                     sizeFactor: _animation,
                     axisAlignment: -1.0,
                     child: Column(
                       children: [
-                        if (midpoint != null)
-                          _buildMap(midpoint, locationA, locationB),
+                        if (midpoint != null) _buildMap(midpoint, locationA, locationB),
                         if (midpoint != null)
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 400),
-                            transitionBuilder: (child, anim) => SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0, 0.1),
-                                end: Offset.zero,
-                              ).animate(anim),
-                              child: FadeTransition(opacity: anim, child: child),
-                            ),
-                            child: midpointProvider.buildTripSummaryCard(),
+                            transitionBuilder: (child, anim) =>
+                              SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.1),
+                                   end: Offset.zero,
+                                ).animate(anim),
+                                child: FadeTransition(opacity: anim, child: child),
+                              ),
+                            child: midProv.buildTripSummaryCard(),
                           ),
                       ],
                     ),
                   ),
 
-                  // Filters & sorting
-                  _buildFilterChips(placeProvider),
-                  _buildSortDropdown(placeProvider),
+                  // Filters & sort
+                  _buildFilterChips(placeProv),
+                  _buildSortDropdown(placeProv),
 
-                  // Places list
+                  // Results list
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: placeProvider.filteredPlaces.length,
-                    itemBuilder: (context, index) {
-                      final place = placeProvider.filteredPlaces[index];
+                    itemCount: placeProv.filteredPlaces.length,
+                    itemBuilder: (ctx, i) {
+                      final place    = placeProv.filteredPlaces[i];
                       final photoUrl = place.photoReference != null
-                        ? placeProvider.getPhotoUrl(place, maxWidth: 200)
+                        ? placeProv.getPhotoUrl(place, maxWidth: 200)
                         : null;
 
                       return Card(
@@ -175,11 +193,11 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                             _buildFadeRoute(PlaceDetailsScreen(place: place)),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(12.0),
+                            padding: const EdgeInsets.all(12),
                             child: Row(
                               children: [
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.0),
+                                  borderRadius: BorderRadius.circular(8),
                                   child: SizedBox(
                                     width: 80,
                                     height: 80,
@@ -198,7 +216,9 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                                     children: [
                                       Text(
                                         place.name,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold, fontSize: 16
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
@@ -213,7 +233,8 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                                             const SizedBox(width: 4),
                                             Flexible(
                                               child: Text(
-                                                '${place.rating!.toStringAsFixed(1)} (${place.userRatingsTotal ?? 0})',
+                                                '${place.rating!.toStringAsFixed(1)} '
+                                                '(${place.userRatingsTotal ?? 0})',
                                                 style: const TextStyle(fontSize: 14),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -248,7 +269,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   }
 
   Widget _buildMap(Location midpoint, Location? locationA, Location? locationB) {
-    // midpoint marker
     final midpointMarker = Marker(
       markerId: const MarkerId('midpoint'),
       position: LatLng(midpoint.latitude, midpoint.longitude),
@@ -262,10 +282,10 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
           name: 'Custom Midpoint',
         );
         Provider.of<MidpointProvider>(context, listen: false).setMidpoint(newMid);
-        final locA = locationA, locB = locationB;
-        if (locA != null && locB != null) {
+        final a = locationA, b = locationB;
+        if (a != null && b != null) {
           Provider.of<PlaceProvider>(context, listen: false)
-            .searchPlaces(newMid, locA, locB);
+            .searchPlaces(newMid, a, b);
         }
       },
     );
@@ -288,42 +308,20 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
       ));
     }
 
-   /// return SizedBox(
-    ///  height: 200,
-    ///  child: GoogleMap(
-    ///    key: const ValueKey('results_map'),
-  /// Build a dynamic key so the map fully rebuilds whenever the coords change
-    final mapKey = ValueKey(
-      'map_${locationA?.latitude}_${locationA?.longitude}_'
-      '${locationB?.latitude}_${locationB?.longitude}_'
-      '${midpoint.latitude}_${midpoint.longitude}',
-   );
-   return SizedBox(
+    return SizedBox(
       height: 200,
       child: GoogleMap(
-        key: mapKey,
+        // no dynamic key here, so map instance persists
         initialCameraPosition: CameraPosition(
           target: LatLng(midpoint.latitude, midpoint.longitude),
-          zoom: 12, // zoomed out to show both points
+          zoom: 10,
         ),
         markers: markers,
         zoomControlsEnabled: true,
         myLocationButtonEnabled: false,
         onMapCreated: (controller) {
-          // dispose previous controller if any
-          _mapController?.dispose();
           _mapController = controller;
-
-          // auto-fit all markers in view
-          if (locationA != null && locationB != null) {
-            final lats = [locationA.latitude, locationB.latitude, midpoint.latitude];
-            final lngs = [locationA.longitude, locationB.longitude, midpoint.longitude];
-            final bounds = LatLngBounds(
-              southwest: LatLng(lats.reduce(math.min), lngs.reduce(math.min)),
-              northeast: LatLng(lats.reduce(math.max), lngs.reduce(math.max)),
-            );
-            controller.moveCamera(CameraUpdate.newLatLngBounds(bounds, 50));
-          }
+          // we’ll animate bounds in the post-frame callback in build()
         },
       ),
     );
@@ -332,12 +330,12 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   Widget _buildFilterChips(PlaceProvider provider) {
     return Container(
       height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: FilterChip(
               label: const Text('All'),
               selected: provider.selectedCategories.isEmpty,
@@ -345,17 +343,17 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
             ),
           ),
           ...provider.places
-              .expand((p) => p.types)
-              .toSet()
-              .where((type) => _categoryLabels.containsKey(type))
-              .map((type) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: FilterChip(
-                      label: Text(_categoryLabels[type]!),
-                      selected: provider.selectedCategories.contains(type),
-                      onSelected: (_) => provider.toggleCategory(type),
-                    ),
-                  )),
+            .expand((p) => p.types)
+            .toSet()
+            .where(_categoryLabels.containsKey)
+            .map((type) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: FilterChip(
+                label: Text(_categoryLabels[type]!),
+                selected: provider.selectedCategories.contains(type),
+                onSelected: (_) => provider.toggleCategory(type),
+              ),
+            )),
         ],
       ),
     );
@@ -363,16 +361,16 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
 
   Widget _buildSortDropdown(PlaceProvider provider) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       alignment: Alignment.centerLeft,
       child: DropdownButton<SortOption>(
         value: provider.sortOption,
         onChanged: provider.setSortOption,
         items: const [
           DropdownMenuItem(value: SortOption.distance, child: Text('Distance')),
-          DropdownMenuItem(value: SortOption.rating, child: Text('Rating')),
+          DropdownMenuItem(value: SortOption.rating,   child: Text('Rating')),
           DropdownMenuItem(value: SortOption.priceAsc, child: Text('Price (Low to High)')),
-          DropdownMenuItem(value: SortOption.priceDesc, child: Text('Price (High to Low)')),
+          DropdownMenuItem(value: SortOption.priceDesc,child: Text('Price (High to Low)')),
         ],
       ),
     );
