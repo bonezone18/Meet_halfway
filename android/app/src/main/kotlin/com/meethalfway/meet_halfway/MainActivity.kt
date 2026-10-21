@@ -1,4 +1,4 @@
-package com.example.meeting_point_app
+package com.meethalfway.meet_halfway
 
 import io.flutter.embedding.android.FlutterActivity
 

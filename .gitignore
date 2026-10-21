@@ -1,59 +1,47 @@
-# Flutter & Dart
-.dart_tool/
-.packages
-.pub/
-.pub-cache/
-flutter_*.png
-build/
-coverage/
-*.lock
-
-# Contains the Google API key
-.env
-android/key.properties
-key.properties
-
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
 
 # IDEs
-.idea/
 *.iml
 *.ipr
 *.iws
-
-# VS Code settings (optional - remove comment to ignore these too)
+.idea/
 .vscode/
 
-# macOS
-.DS_Store
-
-# Logs and temp files
-*.log
-*.class
-*.pyc
-*.swp
-.history
-.buildlog/
-migrate_working_dir/
-
-# iOS & Android
+# Flutter/Dart/Pub
+**/doc/api/
 **/ios/Flutter/.last_build_id
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-ios/ServiceDefinitions.json
-android/app/debug/
-android/app/profile/
-android/app/release/
-android/key.properties
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
 
-# Obfuscation / symbolication
+# Symbolication / obfuscation
 app.*.symbols
 app.*.map.json
 
-# Generated documentation
-doc/api/
+# Android Studio
+/android/app/debug
+/android/app/profile
+/android/app/release
 
-# Swift PM
-.swiftpm/
-
-# SVN (if somehow present)
-.svn/
+# ---- Secrets (never commit API keys) ----
+.env
+config/*.json
+!config/example.json
+ios/Flutter/Secrets.xcconfig
+android/key.properties
