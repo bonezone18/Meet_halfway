@@ -46,6 +46,14 @@ class UnknownFailure extends Failure {
   final Object? cause;
 }
 
+/// Riverpod retry policy: only transient network failures are retried
+/// (with exponential backoff). API errors (bad key, quota), validation and
+/// permission failures are surfaced immediately instead of silently looping.
+Duration? retryTransientFailures(int retryCount, Object error) {
+  if (error is! NetworkFailure || retryCount >= 2) return null;
+  return Duration(seconds: 1 << retryCount);
+}
+
 /// Extracts a display message from any error surfaced through `AsyncValue`.
 String describeError(Object error) =>
     error is Failure ? error.message : 'Something went wrong.';

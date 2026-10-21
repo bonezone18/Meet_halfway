@@ -26,15 +26,8 @@ Future<void> main() async {
   runApp(
     ProviderScope(
       overrides: [appConfigProvider.overrideWithValue(config)],
-      retry: _retry,
+      retry: retryTransientFailures,
       child: const MeetHalfwayApp(),
     ),
   );
-}
-
-/// Only transient network failures are retried automatically; API errors
-/// (bad key, quota) and permission problems are surfaced immediately.
-Duration? _retry(int retryCount, Object error) {
-  if (error is! NetworkFailure || retryCount >= 2) return null;
-  return Duration(seconds: 1 << retryCount);
 }
