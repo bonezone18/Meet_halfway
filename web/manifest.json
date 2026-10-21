@@ -1,11 +1,11 @@
 {
-    "name": "meeting_point_app",
-    "short_name": "meeting_point_app",
+    "name": "Meet Halfway",
+    "short_name": "Meet Halfway",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Find a fair place to meet halfway.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
