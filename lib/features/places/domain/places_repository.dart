@@ -14,6 +14,6 @@ abstract interface class PlacesRepository {
 
   Future<VenueDetails> details(String venueId);
 
-  /// A URL for the venue's photo, or null if unavailable.
-  String? photoUrl(String photoName, {int maxWidthPx = 400});
+  /// How to load the venue's photo, or null if unavailable.
+  VenuePhoto? photo(String photoName, {int maxWidthPx = 400});
 }

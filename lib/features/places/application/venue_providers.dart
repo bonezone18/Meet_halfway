@@ -67,9 +67,8 @@ final FutureProviderFamily<VenueDetails, String> venueDetailsProvider =
       (ref, venueId) => ref.watch(placesRepositoryProvider).details(venueId),
     );
 
-/// Photo URL helper so widgets don't depend on the repository directly.
-final ProviderFamily<String?, String> venuePhotoUrlProvider =
-    Provider.family<String?, String>(
-      (ref, photoName) =>
-          ref.watch(placesRepositoryProvider).photoUrl(photoName),
+/// Photo helper so widgets don't depend on the repository directly.
+final ProviderFamily<VenuePhoto?, String> venuePhotoProvider =
+    Provider.family<VenuePhoto?, String>(
+      (ref, photoName) => ref.watch(placesRepositoryProvider).photo(photoName),
     );

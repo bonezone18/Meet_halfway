@@ -94,12 +94,21 @@ class GooglePlacesRepository implements PlacesRepository {
     return details;
   }
 
+  /// The key stays in the query string for web, where image requests can't
+  /// carry custom headers (the browser's Referer satisfies web-restricted
+  /// keys). Native platforms also send the client's headers, which include
+  /// the app identity that Android/iOS-restricted keys require.
   @override
-  String? photoUrl(String photoName, {int maxWidthPx = 400}) => Uri.https(
-    'places.googleapis.com',
-    '/v1/$photoName/media',
-    {'maxWidthPx': '$maxWidthPx', 'key': _apiKey},
-  ).toString();
+  VenuePhoto? photo(String photoName, {int maxWidthPx = 400}) => VenuePhoto(
+    url: Uri.https('places.googleapis.com', '/v1/$photoName/media', {
+      'maxWidthPx': '$maxWidthPx',
+      'key': _apiKey,
+    }).toString(),
+    headers: {
+      for (final MapEntry(:key, :value) in _dio.options.headers.entries)
+        if (value is String) key: value,
+    },
+  );
 
   /// Exposed for testing against recorded API responses.
   static List<Venue> parseSearchResponse(Map<String, dynamic>? data) {

@@ -334,6 +334,279 @@ $GeoPointCopyWith<$Res> get location {
 }
 
 /// @nodoc
+mixin _$VenuePhoto {
+
+ String get url; Map<String, String> get headers;
+/// Create a copy of VenuePhoto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$VenuePhotoCopyWith<VenuePhoto> get copyWith => _$VenuePhotoCopyWithImpl<VenuePhoto>(this as VenuePhoto, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as VenuePhoto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VenuePhoto&&(identical(other.url, _this.url) || other.url == _this.url)&&const DeepCollectionEquality().equals(other.headers, _this.headers));
+}
+
+
+@override
+int get hashCode {
+  final _this = this as VenuePhoto;
+  return Object.hash(runtimeType,_this.url,const DeepCollectionEquality().hash(_this.headers));
+}
+
+@override
+String toString() {
+  final _this = this as VenuePhoto;
+  return 'VenuePhoto(url: ${_this.url}, headers: ${_this.headers})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $VenuePhotoCopyWith<$Res>  {
+  factory $VenuePhotoCopyWith(VenuePhoto value, $Res Function(VenuePhoto) _then) = _$VenuePhotoCopyWithImpl;
+@useResult
+$Res call({
+ String url, Map<String, String> headers
+});
+
+
+
+
+}
+/// @nodoc
+class _$VenuePhotoCopyWithImpl<$Res>
+    implements $VenuePhotoCopyWith<$Res> {
+  _$VenuePhotoCopyWithImpl(this._self, this._then);
+
+  final VenuePhoto _self;
+  final $Res Function(VenuePhoto) _then;
+
+/// Create a copy of VenuePhoto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? url = null,Object? headers = null,}) {
+  return _then(VenuePhoto(
+url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String,headers: null == headers ? _self.headers : headers // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [VenuePhoto].
+extension VenuePhotoPatterns on VenuePhoto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _VenuePhoto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _VenuePhoto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _VenuePhoto value)  $default,){
+final _that = this;
+switch (_that) {
+case _VenuePhoto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _VenuePhoto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _VenuePhoto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String url,  Map<String, String> headers)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _VenuePhoto() when $default != null:
+return $default(_that.url,_that.headers);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String url,  Map<String, String> headers)  $default,) {final _that = this;
+switch (_that) {
+case _VenuePhoto():
+return $default(_that.url,_that.headers);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String url,  Map<String, String> headers)?  $default,) {final _that = this;
+switch (_that) {
+case _VenuePhoto() when $default != null:
+return $default(_that.url,_that.headers);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _VenuePhoto implements VenuePhoto {
+  const _VenuePhoto({required this.url,  Map<String, String> headers = const <String, String>{}}): _headers = headers;
+  
+
+@override final  String url;
+ final  Map<String, String> _headers;
+@override@JsonKey() Map<String, String> get headers {
+  if (_headers is EqualUnmodifiableMapView) return _headers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_headers);
+}
+
+
+/// Create a copy of VenuePhoto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$VenuePhotoCopyWith<_VenuePhoto> get copyWith => __$VenuePhotoCopyWithImpl<_VenuePhoto>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _VenuePhoto&&(identical(other.url, url) || other.url == url)&&const DeepCollectionEquality().equals(other.headers, _headers));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,url,const DeepCollectionEquality().hash(_headers));
+}
+
+@override
+String toString() {
+    return 'VenuePhoto(url: $url, headers: $headers)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$VenuePhotoCopyWith<$Res> implements $VenuePhotoCopyWith<$Res> {
+  factory _$VenuePhotoCopyWith(_VenuePhoto value, $Res Function(_VenuePhoto) _then) = __$VenuePhotoCopyWithImpl;
+@override @useResult
+$Res call({
+ String url, Map<String, String> headers
+});
+
+
+
+
+}
+/// @nodoc
+class __$VenuePhotoCopyWithImpl<$Res>
+    implements _$VenuePhotoCopyWith<$Res> {
+  __$VenuePhotoCopyWithImpl(this._self, this._then);
+
+  final _VenuePhoto _self;
+  final $Res Function(_VenuePhoto) _then;
+
+/// Create a copy of VenuePhoto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? url = null,Object? headers = null,}) {
+  return _then(_VenuePhoto(
+url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String,headers: null == headers ? _self._headers : headers // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$VenueDetails {
 
  Venue get venue; String? get phoneNumber; String? get websiteUri; String? get summary; List<String> get weeklyHours;
