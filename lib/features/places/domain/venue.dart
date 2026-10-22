@@ -35,6 +35,16 @@ abstract class Venue with _$Venue {
   }) = _Venue;
 }
 
+/// Where to load a venue photo from. Some sources need [headers] on the image
+/// request (e.g. app identity for platform-restricted API keys).
+@freezed
+abstract class VenuePhoto with _$VenuePhoto {
+  const factory VenuePhoto({
+    required String url,
+    @Default(<String, String>{}) Map<String, String> headers,
+  }) = _VenuePhoto;
+}
+
 /// Extra information loaded for the details screen.
 @freezed
 abstract class VenueDetails with _$VenueDetails {

@@ -86,11 +86,23 @@ void main() {
     expect(details.weeklyHours, ['Monday: 7:00 AM – 5:00 PM']);
   });
 
-  test('photoUrl targets the media endpoint', () {
-    final repo = GooglePlacesRepository(dioWith(FakeHttpAdapter({})), 'k');
-    final url = Uri.parse(repo.photoUrl('places/x/photos/y', maxWidthPx: 200)!);
+  test('photo targets the media endpoint with the client headers', () {
+    final dio = dioWith(FakeHttpAdapter({}))
+      ..options.headers.addAll({
+        'X-Goog-Api-Key': 'k',
+        'X-Android-Package': 'com.pkg',
+        'X-Android-Cert': 'F00',
+      });
+    final photo = GooglePlacesRepository(
+      dio,
+      'k',
+    ).photo('places/x/photos/y', maxWidthPx: 200)!;
+    final url = Uri.parse(photo.url);
     expect(url.host, 'places.googleapis.com');
     expect(url.path, '/v1/places/x/photos/y/media');
     expect(url.queryParameters['maxWidthPx'], '200');
+    expect(photo.headers, containsPair('X-Android-Package', 'com.pkg'));
+    expect(photo.headers, containsPair('X-Android-Cert', 'F00'));
+    expect(photo.headers, containsPair('X-Goog-Api-Key', 'k'));
   });
 }

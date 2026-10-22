@@ -112,16 +112,19 @@ class VenueThumbnail extends ConsumerWidget {
       color: scheme.surfaceContainerHighest,
       child: Icon(Icons.storefront, color: scheme.outline),
     );
-    final photo = venue.photoName;
-    final url = photo == null ? null : ref.watch(venuePhotoUrlProvider(photo));
+    final photoName = venue.photoName;
+    final photo = photoName == null
+        ? null
+        : ref.watch(venuePhotoProvider(photoName));
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: SizedBox.square(
         dimension: size,
-        child: url == null
+        child: photo == null
             ? placeholder
             : Image.network(
-                url,
+                photo.url,
+                headers: photo.headers,
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => placeholder,
               ),

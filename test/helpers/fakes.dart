@@ -66,7 +66,7 @@ class FakePlacesRepository implements PlacesRepository {
       VenueDetails(venue: venue(venueId, at: newYork));
 
   @override
-  String? photoUrl(String photoName, {int maxWidthPx = 400}) => null;
+  VenuePhoto? photo(String photoName, {int maxWidthPx = 400}) => null;
 }
 
 class FakeDeviceLocationSource implements DeviceLocationSource {
