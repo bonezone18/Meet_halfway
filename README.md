@@ -38,6 +38,15 @@ Client-side keys always ship inside the app, so **restrict every key** in the Cl
 
 On the web, the Maps JavaScript API is loaded at startup using the Dart-side key, so `web/index.html` holds no key.
 
+#### Android-restricted keys
+
+You can use one Android-restricted key for both the map tiles and the Places/Routes calls. The app sends its package name and signing-certificate SHA-1 with every request (`X-Android-Package` / `X-Android-Cert`), which Google requires for app-restricted keys. Under **Application restrictions → Android apps**, add the package `com.meethalfway.meet_halfway` with:
+
+- your **debug** SHA-1, from `cd android && ./gradlew signingReport`, or on Windows `keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android`
+- your **release** SHA-1, when you set up release signing (or the Play App Signing key)
+
+iOS-restricted keys work the same way: the app sends `X-Ios-Bundle-Identifier`.
+
 ### 3. Run
 
 ```bash

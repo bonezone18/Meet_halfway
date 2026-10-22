@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meet_halfway/app/app.dart';
 import 'package:meet_halfway/core/config/app_config.dart';
 import 'package:meet_halfway/core/error/failure.dart';
+import 'package:meet_halfway/core/platform/app_identity.dart';
 import 'package:meet_halfway/core/platform/maps_loader.dart';
 
 Future<void> main() async {
@@ -23,9 +24,14 @@ Future<void> main() async {
     debugPrint('$e');
   }
 
+  final identity = await AppIdentity.load();
+
   runApp(
     ProviderScope(
-      overrides: [appConfigProvider.overrideWithValue(config)],
+      overrides: [
+        appConfigProvider.overrideWithValue(config),
+        appIdentityProvider.overrideWithValue(identity),
+      ],
       retry: retryTransientFailures,
       child: const MeetHalfwayApp(),
     ),
