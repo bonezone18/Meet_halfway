@@ -3,17 +3,23 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meet_halfway/core/config/app_config.dart';
 import 'package:meet_halfway/core/error/failure.dart';
+import 'package:meet_halfway/core/platform/app_identity.dart';
 
 /// Shared HTTP client for Google Maps Platform APIs (Places New, Routes).
 ///
 /// The API key is attached as a header so it never appears in logged URLs.
+/// App-identity headers let keys restricted to Android/iOS apps accept these
+/// calls.
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
   final dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
-      headers: {'X-Goog-Api-Key': config.googleMapsApiKey},
+      headers: {
+        'X-Goog-Api-Key': config.googleMapsApiKey,
+        ...ref.watch(appIdentityProvider).headers,
+      },
     ),
   );
   if (kDebugMode) {

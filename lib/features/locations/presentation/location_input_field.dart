@@ -179,6 +179,7 @@ class _LocationInputFieldState extends ConsumerState<LocationInputField> {
             labelText: widget.participant.name,
             hintText: 'Search an address or place',
             errorText: _error,
+            errorMaxLines: 3,
             prefixIcon: Icon(
               location?.source == LocationSource.device
                   ? Icons.my_location
